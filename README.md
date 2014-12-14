@@ -10,7 +10,7 @@ Embedded Operating System Just Funny
 
 *v002:*
 
-	* adjust some directories for more reasonable. port -->> hal
-	* move interrupt stack from code section to bss section, reduce bin size
-	* .h, .c and .S file format
+	+ adjust some directories for more reasonable. port -->> hal
+	+ move interrupt stack from code section to bss section, reduce bin size
+	+ .h, .c and .S file format
 
