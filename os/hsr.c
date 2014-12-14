@@ -6,7 +6,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "os/hsr.h"
-#include "port/port.h"
+#include "hal/port.h"
 
 #if ((HSR_PRIORITY_MAX_NR <= 0) || (HSR_PRIORITY_MAX_NR > 1024))
 #error HSR_PRIORITY_MAX_NR is out of range(1 ~ 32)

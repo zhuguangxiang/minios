@@ -4,9 +4,10 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
-#include "port/s3c2440/s3c2440_io.h"
-#include "port/s3c2440/s3c2440_regs.h"
-#include "port/s3c2440/s3c2440_interrupt.h"
+
+#include "hal/s3c2440/s3c2440_io.h"
+#include "hal/s3c2440/s3c2440_regs.h"
+#include "hal/s3c2440/s3c2440_interrupt.h"
 
 void s3c2440_enable_irq(int irq)
 {

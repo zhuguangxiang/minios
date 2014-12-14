@@ -32,9 +32,9 @@ typedef int32_t  status_t;
 
 typedef void  *handle_t;
 
-typedef unsigned long address_t;
+typedef unsigned long addr_t;
 
-#define PTR_TO_INT(ptr) ((address_t)ptr)
+#define PTR_TO_INT(ptr) ((addr_t)ptr)
 
 #define MIN(a, b) ((a) > (b) ? (b) : (a))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -65,4 +65,6 @@ typedef unsigned long address_t;
 #define BUG_ON(condition)  do { if (condition) while (1); } while (0)
 
 #endif // _MINIOS_TYPE_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF minios_type.h

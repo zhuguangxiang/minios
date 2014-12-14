@@ -4,6 +4,7 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
+
 #ifndef _MINIOS_TIMER_H_
 #define _MINIOS_TIMER_H_
 
@@ -44,6 +45,7 @@ void tick_increase(void);
 #define time_after_eq(a,b)  ((int32_t)(a) - (int32_t)(b) >= 0)
 #define time_before_eq(a,b) time_after_eq(b,a)
 
-/*--------------------------------------------------------------------------*/
 #endif // _MINIOS_TIMER_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF timer.h

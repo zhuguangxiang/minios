@@ -6,9 +6,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include "os/task.h"
-#include "port/s3c2440/s3c2440_io.h"
-#include "port/s3c2440/s3c2440_regs.h"
-#include "port/s3c2440/s3c2440_interrupt.h"
+#include "hal/s3c2440/s3c2440_io.h"
+#include "hal/s3c2440/s3c2440_regs.h"
+#include "hal/s3c2440/s3c2440_interrupt.h"
 
 void printf(const char *fmt);
 
@@ -124,8 +124,8 @@ void printf(const char *fmt)
     }
 }
 
-static TASK_STRUCT(test_task_1, TASK_DEFAULT_STACK_SIZE);
-static TASK_STRUCT(test_task_2, TASK_DEFAULT_STACK_SIZE);
+static DEFAULT_TASK_STRUCT(test_task_1);
+static DEFAULT_TASK_STRUCT(test_task_2);
 
 void test_task_1_entry(void *p)
 {
@@ -154,15 +154,16 @@ void test_task_2_entry(void *p)
     }
 }
 
-void app_start(void)
+void application_start(void)
 {
 	S3C2440_Init_Timer();
 
-    task_struct_create(&test_task_1, "test_task_1", 8, TICK_SCHED_ENABLED,
+    task_struct_create(&test_task_1, "test_task_1", 8, TICK_SCHED_FLAG,
         test_task_1_entry, NULL);
 
-    task_struct_create(&test_task_2, "test_task_2", 8, TICK_SCHED_ENABLED,
+    task_struct_create(&test_task_2, "test_task_2", 8, TICK_SCHED_FLAG,
         test_task_2_entry, NULL);
 }
 
+/*--------------------------------------------------------------------------*/
 // EOF app.c

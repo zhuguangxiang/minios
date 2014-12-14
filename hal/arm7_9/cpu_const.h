@@ -5,31 +5,27 @@
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
 
-#ifndef _MINIOS_HSR_H_
-#define _MINIOS_HSR_H_
+#ifndef _HAL_ARM7_9_CONST_H_
+#define _HAL_ARM7_9_CONST_H_
 
-#include "os/minios_type.h"
-#include "os/list.h"
+#define ARM_MODE_SVC    0x13
+#define ARM_MODE_IRQ    0x12
+#define ARM_IRQ_BIT     (1 << 7)
+#define ARM_FIQ_BIT     (1 << 6)
 
-#define HSR_PRIORITY_MAX_NR 8
+#define S_FRAME_SIZE    64
+#define S_PSR           60
+#define S_PC            56
 
-typedef void (*hsr_func_t)(void *);
+#define ARM_IRQ_STACK_SIZE  8192
 
-typedef struct {
-    list_head_t node;
-    hsr_func_t function;
-    void *data;
-    int32_t count;
-    uint8_t priority;
-    char *desc;
-} hsr_t;
+#define HAL_USE_INTERRUPT_STACK
 
-#define DECLARE_HSR(name, prio, func, desc) \
-    hsr_t name = {LIST_HEAD_INIT((name).node), func, NULL, 0, prio, desc}
+#define HAL_COMMON_INTERRUPTS_STACK_SIZE 4096
 
-void activiate_hsr(hsr_t *, void *);
+#define HAL_STARTUP_STACK_SIZE 1024
 
-#endif // _MINIOS_HSR_H_
+#endif // _HAL_ARM7_9_CONST_H_
 
 /*--------------------------------------------------------------------------*/
-// EOF hsr.h
+// EOF cpu_const.h

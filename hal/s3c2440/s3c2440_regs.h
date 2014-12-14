@@ -4,8 +4,9 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
-#ifndef _MINIOS_S3C2440_REG_H_
-#define _MINIOS_S3C2440_REG_H_
+
+#ifndef _HAL_S3C2440_REG_H_
+#define _HAL_S3C2440_REG_H_
 
 #define CLOCK_BASE 0x4c000000
 #define oLOCKTIME  0x00
@@ -178,4 +179,6 @@
 #define INTSUBMASK (INTERRUPT_BASE + 0x1c)
 
 #endif // _MINIOS_S3C2440_REG_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF s3c2440_regs.h

@@ -12,7 +12,7 @@ C_ARCH="-mapcs-frame -std=gnu99 -mbig-endian -march=armv4"
 C_DEF="-DCPU_BITS=32"
 C_FLAGS="-c -nostdinc -fno-builtin $C_OPT $C_DBG $C_WARN $C_ARCH $C_DEF"
 
-LD_SCRIPT="port/arm7_9/arm7_9.lds"
+LD_SCRIPT="hal/arm7_9/arm7_9.lds"
 TEXT_BASE="0x30000000"
 LD_FLAGS="-Bstatic -nostdlib -T $LD_SCRIPT -Ttext $TEXT_BASE"
 
@@ -22,7 +22,7 @@ function compile()
 	obj="${obj##*/}"
 	path="${1%/*}"
 	# echo "$path"
-	if [ ! -d obj/$path ]; then 
+	if [ ! -d obj/$path ]; then
 		mkdir -p obj/$path
 	fi
     cmd="$CC $C_FLAGS -I. $1 -o obj/$path/$obj"
@@ -50,7 +50,7 @@ function dump()
 	`$OBJDUMP -D $1 > $2`
 }
 
-if [ ! -d obj ]; then 
+if [ ! -d obj ]; then
 mkdir obj
 fi
 
@@ -59,15 +59,16 @@ fi
 compile "os/task.c"
 compile "os/hsr.c"
 compile "os/timer.c"
+compile "os/main.c"
 ar "obj/os/*.o" "libos.a"
+
+compile "hal/arm7_9/context_switch.S"
+compile "hal/arm7_9/interrupt.S"
+compile "hal/arm7_9/head.S"
+compile "hal/s3c2440/s3c2440_interrupt.c"
 
 compile "app/app.c"
 
-compile "port/arm7_9/context_switch.S"
-compile "port/arm7_9/interrupt.S"
-compile "port/arm7_9/head.S"
-compile "port/s3c2440/s3c2440_interrupt.c"
-
-ld "minios.elf" "obj/app/*.o" "obj/port/arm7_9/*.o" "obj/port/s3c2440/*.o" "-los -L."
-dump "minios.elf" "minios.elf.dump"
+ld "minios.elf" "obj/app/*.o" "obj/hal/arm7_9/*.o" "obj/hal/s3c2440/*.o" "-los -L."
+dump "minios.elf" "minios.elf.dump.txt"
 

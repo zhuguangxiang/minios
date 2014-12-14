@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
 
-#include "cpu_const.h"
+#include "hal/arm7_9/cpu_const.h"
 
 /* void arm7_9_switch_context(address_t *to, address_t *from) */
     .global arm7_9_switch_context
@@ -36,5 +36,6 @@ arm7_9_load_context:
 
     /* load task context */
     ldmia r1, {r0-r12, lr, pc}^
+
 /*--------------------------------------------------------------------------*/
 // EOF context_switch.S

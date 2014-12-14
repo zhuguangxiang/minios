@@ -4,8 +4,9 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
-#ifndef _MINIOS_S3C2440_INTERRUPT_H_
-#define _MINIOS_S3C2440_INTERRUPT_H_
+
+#ifndef _HAL_S3C2440_INTERRUPT_H_
+#define _HAL_S3C2440_INTERRUPT_H_
 
 #include "os/minios_type.h"
 
@@ -23,5 +24,7 @@ uint32_t s3c2440_get_subirq(void);
 typedef void (*int_handle_t)(int, void *);
 void register_irq(int irq, int_handle_t handler, void *data);
 
-#endif // _MINIOS_S3C2440_INTERRUPT_H_
+#endif // _HAL_S3C2440_INTERRUPT_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF s3c2440_interrupt.h

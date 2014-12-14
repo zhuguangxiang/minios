@@ -4,13 +4,27 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
-#ifndef _MINIOS_S3C2440_IO_H_
-#define _MINIOS_S3C2440_IO_H_
 
-#include "os/minios_type.h"
+/* extern initialization functions */
+void init_sched(void);
+void init_hsr(void);
+void init_mem(void);
+void init_dev(void);
+void init_fs(void);
 
-#define READ_REG(addr)  *(volatile uint32_t *)(addr)
-#define WRITE_REG(addr, val) *(volatile uint32_t *)(addr) = (val)
+/* extern start scheduler function */
+void start_sched(void);
 
-#endif // _MINIOS_S3C2440_IO_H_
-// EOF s3c2440_io.h
+void os_init(void)
+{
+    init_sched();
+    init_hsr();
+}
+
+void os_start(void)
+{
+    start_sched();
+}
+
+/*--------------------------------------------------------------------------*/
+// EOF minios.c

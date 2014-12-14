@@ -7,7 +7,7 @@
 
 #include "os/task.h"
 #include "os/hsr.h"
-#include "port/port.h"
+#include "hal/port.h"
 
 /*--------------------------------------------------------------------------*/
 
@@ -48,15 +48,15 @@ static inline void rq_bitmap_clear(sched_bitmap_t *map, int32_t nr)
     map->bitmap[group_nr] = value;
 }
 
-static void rq_task_add(run_queue_t *rq, task_t *task, int first)
+static void rq_task_add(run_queue_t *rq, task_t *task, bool_t first)
 {
     uint8_t priority = task->priority;
     list_head_t *list = rq->queue_array + priority;
 
-    if (first)
-        LIST_ADD(list, &task->ready_node);
+    if (TRUE == first)
+        LIST_ADD(list, &task->run_node);
     else
-        LIST_ADD_TAIL(list, &task->ready_node);
+        LIST_ADD_TAIL(list, &task->run_node);
 
     rq_bitmap_set(&rq->queue_map, priority);
 
@@ -67,8 +67,8 @@ static void rq_task_add(run_queue_t *rq, task_t *task, int first)
 static inline void rq_task_move_tail(run_queue_t *rq, task_t *task)
 {
     list_head_t *list = rq->queue_array + task->priority;
-    LIST_DEL(&task->ready_node);
-    LIST_ADD_TAIL(list, &task->ready_node);
+    LIST_DEL(&task->run_node);
+    LIST_ADD_TAIL(list, &task->run_node);
 }
 
 static void rq_task_delete(run_queue_t *rq, task_t *task)
@@ -76,7 +76,7 @@ static void rq_task_delete(run_queue_t *rq, task_t *task)
     uint8_t priority = task->priority;
     list_head_t *list = rq->queue_array + priority;
 
-    LIST_DEL(&task->ready_node);
+    LIST_DEL(&task->run_node);
 
     if (LIST_EMPTY(list)) {
         rq_bitmap_clear(&rq->queue_map, priority);
@@ -104,7 +104,7 @@ task_t *rq_pick_task(void)
     list_head_t *list = rq->queue_array + rq->highest_priority;
     list_head_t *node = LIST_FIRST(list);
     BUG_ON(NULL == node);
-    return LIST_ENTRY(node, task_t, ready_node);
+    return LIST_ENTRY(node, task_t, run_node);
 }
 
 bool_t need_sched(void)
@@ -132,7 +132,7 @@ static void schedule(void)
         task_switches++;
 
         // save time slice
-        if (TASK_SUSPEND == from->state)
+        if ((TASK_SUSPEND == from->state) && TIMER_ACTIVE_TASK(from))
             from->time_slice = TICK_SCHED_QUANTUM;
 
         // switch context
@@ -162,8 +162,9 @@ void task_unlock(void)
 
 /*--------------------------------------------------------------------------*/
 
-void task_create(task_t *task, char *name, uint8_t priority, uint8_t options,
-    address_t stack_base, uint32_t stack_size, task_entry_t entry, void *para)
+void task_create(task_t *task, char *name, uint8_t priority,
+    uint8_t options, addr_t stack_base, uint32_t stack_size,
+    task_entry_t entry, void *para)
 {
     BUG_ON(priority >= SCHED_PRIORITY_MAX_NR);
 
@@ -177,17 +178,20 @@ void task_create(task_t *task, char *name, uint8_t priority, uint8_t options,
     task->para = para;
     task->time_slice = 0;
     INIT_TIMER(&task->timer);
-    INIT_LIST_HEAD(&task->ready_node);
+    INIT_LIST_HEAD(&task->run_node);
     task->name = name;
 
-    if (options & TICK_SCHED_ENABLED) {
-        task->flags |= TICK_SCHED_ENABLED;
+    if (options & TICK_SCHED_FLAG) {
+        task->flags |= TICK_SCHED_FLAG;
         task->time_slice = TICK_SCHED_QUANTUM;
     }
 
+    if (options & URGENT_FLAG)
+        task->flags |= URGENT_FLAG;
+
     HAL_TASK_BUILD_STACK(&task->stack);
 
-    task_resume(task, 0);
+    task_resume(task);
 }
 
 static void task_timeout(void *para)
@@ -196,28 +200,28 @@ static void task_timeout(void *para)
     if (TASK_SUSPEND != task->state)
         return;
 
-    BUG_ON(!(task->flags & TASK_TIMER_ACTIVE));
+    BUG_ON(!TIMER_ACTIVE_TASK(task));
     BUG_ON(TIMER_ACTIVE(&task->timer));
 
-    task->flags &= ~TASK_TIMER_ACTIVE;
+    task->flags &= ~TIMER_ACTIVE_FLAG;
 
     if (NULL != task->cleanup)
         task->cleanup(task->cleanup_info);
 
-    task_resume(task, 0);
+    task_resume(task);
 }
 
-void task_suspend(task_t *task, int32_t timeout, cleanup_t cleanup, void *info)
+void task_suspend(task_t *task, int32_t ticks, cleanup_t cleanup, void *info)
 {
     if (task->state != TASK_RUNNING)
         return;
 
     task_lock();
 
-    if (timeout > 0) {
-        task->flags |= TASK_TIMER_ACTIVE;
+    if (ticks > 0) {
+        task->flags |= TIMER_ACTIVE_FLAG;
         BUG_ON(TIMER_ACTIVE(&task->timer));
-        timer_start(&task->timer, timeout, task_timeout, task);
+        timer_start(&task->timer, ticks, task_timeout, task);
     }
 
     task->cleanup = cleanup;
@@ -228,23 +232,23 @@ void task_suspend(task_t *task, int32_t timeout, cleanup_t cleanup, void *info)
     task_unlock();
 }
 
-void task_resume(task_t *task, int first)
+void task_resume(task_t *task)
 {
     if (task->state != TASK_SUSPEND)
         return;
 
     task_lock();
 
-    if (task->flags & TASK_TIMER_ACTIVE) {
+    if (TIMER_ACTIVE_TASK(task)) {
         BUG_ON(!TIMER_ACTIVE(&task->timer));
         timer_stop(&task->timer);
-        task->flags &= ~TASK_TIMER_ACTIVE;
+        task->flags &= ~TIMER_ACTIVE_FLAG;
     }
 
     task->cleanup = NULL;
     task->cleanup_info = NULL;
     task->state = TASK_RUNNING;
-    rq_task_add(&run_queue, task, first);
+    rq_task_add(&run_queue, task, URGENT_TASK(task));
 
     task_unlock();
 }
@@ -257,7 +261,7 @@ void task_time_slice_hsr(void *data)
 
     BUG_ON(task != current);
 
-    if ((task->flags & TICK_SCHED_ENABLED) && (task->time_slice <= 0)) {
+    if (TICK_SCHED_TASK(task) && (task->time_slice <= 0)) {
 
         if (task->default_priority == SCHED_PRIORITY_MAX_NR - 1) {
             task->time_slice = TICK_SCHED_QUANTUM;
@@ -274,7 +278,7 @@ void task_time_slice_hsr(void *data)
             task->time_slice = TICK_SCHED_QUANTUM +
             (task->priority - task->default_priority) * TICK_SCHED_QUANTUM / 2;
         }
-        rq_task_add(&run_queue, task, 0);
+        rq_task_add(&run_queue, task, URGENT_TASK(task));
     }
 }
 
@@ -282,10 +286,8 @@ static DECLARE_HSR(time_slice_hsr, 0, task_time_slice_hsr, "time_slice_hsr");
 
 void task_time_slice(void)
 {
-    if (current->flags & TICK_SCHED_ENABLED) {
-        if (--current->time_slice <= 0)
-            activiate_hsr(&time_slice_hsr, current);
-    }
+    if (TICK_SCHED_TASK(current) && (--current->time_slice <= 0))
+        activiate_hsr(&time_slice_hsr, current);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -294,7 +296,7 @@ void task_yield(void)
 {
     task_lock();
 
-    if (current->flags & TICK_SCHED_ENABLED)
+    if (TICK_SCHED_TASK(current))
         current->time_slice = TICK_SCHED_QUANTUM;
 
     rq_task_move_tail(&run_queue, current);
@@ -315,7 +317,7 @@ void task_exit(void)
     rq_task_delete(&run_queue, current);
     current->state = TASK_ZOMBIE;
     BUG_ON(TIMER_ACTIVE(&current->timer));
-    BUG_ON(current->flags & TASK_TIMER_ACTIVE);
+    BUG_ON(TIMER_ACTIVE_TASK(current));
     BUG_ON(current->cleanup != NULL);
     ++task_switches;
     current = rq_pick_task();
@@ -335,12 +337,12 @@ void task_restart(task_t *task)
     task->priority = task->default_priority;
     task->state = TASK_SUSPEND;
 
-    if (task->flags & TICK_SCHED_ENABLED)
+    if (TICK_SCHED_TASK(task))
         task->time_slice = TICK_SCHED_QUANTUM;
 
     HAL_TASK_BUILD_STACK(&task->stack);
 
-    task_resume(task, 0);
+    task_resume(task);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -381,21 +383,6 @@ void task_entry_wrapper(void)
 {
     current->entry(current->para);
     task_exit();
-}
-
-/*--------------------------------------------------------------------------*/
-
-void os_start(void)
-{
-    extern void init_hsr(void);
-    extern void app_start(void);
-    init_sched();
-    init_hsr();
-    //init_mem();
-    //init_dev();
-    //init_fs();
-    app_start();
-    start_sched();
 }
 
 /*--------------------------------------------------------------------------*/

@@ -8,7 +8,7 @@ SECTIONS
 
     .text :
     {
-        obj/port/arm7_9/head.o(.text)
+        obj/hal/arm7_9/head.o(.text)
         *(.text)
         *(.text.*)
     }

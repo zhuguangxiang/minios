@@ -4,10 +4,11 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
+
 #ifndef _MINIOS_LIST_H_
 #define _MINIOS_LIST_H_
 
-#include "minios_type.h"
+#include "os/minios_type.h"
 
 typedef struct list_head
 {
@@ -129,4 +130,6 @@ static inline void HLIST_ADD(hlist_head_t *head, hlist_node_t *node)
     for (pos = (head)->first; pos && ({n = pos->next; 1;}); pos = n)
 
 #endif // _MINIOS_LIST_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF list.h

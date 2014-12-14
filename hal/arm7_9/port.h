@@ -4,11 +4,12 @@
 /*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
-#ifndef _ARM7_9_PORT_H_
-#define _ARM7_9_PORT_H_
+
+#ifndef _HAL_ARM7_9_PORT_H_
+#define _HAL_ARM7_9_PORT_H_
 
 #include "os/minios_type.h"
-#include "port/arm7_9/cpu_const.h"
+#include "hal/arm7_9/cpu_const.h"
 
 /* find first set, return 0 - 32 */
 static inline int __ffs(uint32_t bits)
@@ -71,7 +72,7 @@ static inline void arm7_9_enable_irq(void)
 
 void task_entry_wrapper(void);
 
-static inline void arm7_9_buid_stack(address_t *stack_addr)
+static inline void arm7_9_buid_stack(addr_t *stack_addr)
 {
     uint32_t *stack = *(uint32_t **)stack_addr;
 
@@ -92,16 +93,18 @@ static inline void arm7_9_buid_stack(address_t *stack_addr)
     *--stack = (uint32_t)0;    /* R1   */
     *--stack = (uint32_t)0;    /* R0   */
 
-    *stack_addr = (address_t)stack;
+    *stack_addr = (addr_t)stack;
 }
 
 #define HAL_TASK_BUILD_STACK arm7_9_buid_stack
 
-void arm7_9_switch_context(address_t *to, address_t *from);
-void arm7_9_load_context(address_t *to);
+void arm7_9_switch_context(addr_t *to, addr_t *from);
+void arm7_9_load_context(addr_t *to);
 
 #define HAL_TASK_SWITCH_CONTEXT arm7_9_switch_context
 #define HAL_LOAD_TASK_CONTEXT arm7_9_load_context
 
-#endif // _ARM7_9_PORT_H_
+#endif // _HAL_ARM7_9_PORT_H_
+
+/*--------------------------------------------------------------------------*/
 // EOF port.h

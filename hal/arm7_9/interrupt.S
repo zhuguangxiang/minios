@@ -5,7 +5,7 @@
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
 
-#include "cpu_const.h"
+#include "hal/arm7_9/cpu_const.h"
 
     .global asm_do_interrupt
 asm_do_interrupt:
@@ -16,17 +16,19 @@ asm_do_interrupt:
     mrs lr, spsr
     stmfd sp!, {lr}
 
-    ldr r0, _LCint_level
+    ldr r1, _LCirq_level
+    ldr r0, [r1]
     add r0, r0, #1
-    str r0, _LCint_level
+    str r0, [r1]
 
     /* call platform_do_interrupt */
     mov lr, pc
     ldr pc, _LCplat_irq
 
-    ldr r0, _LCint_level
+    ldr r1, _LCirq_level
+    ldr r0, [r1]
     sub r0, r0, #1
-    str r0, _LCint_level
+    str r0, [r1]
 
     cmp r0, #0
     ldmnefd sp!, {lr}
@@ -59,14 +61,14 @@ asm_do_interrupt:
     ldmfd sp!, {r0-r3, ip, lr}
 
     /* mov irq to svc mode */
-    msr cpsr_c, #ARM_MODE_SVC + ARM_IRQ_BIT + ARM_FIQ_BIT
+    msr cpsr_c, #(ARM_MODE_SVC | ARM_IRQ_BIT | ARM_FIQ_BIT)
     sub sp, sp, #S_FRAME_SIZE
     stmia sp, {r0-r12, lr}
 
     mov r2, sp
 
     /* mov to irq mode, get irq_lr & irq_spsr */
-    msr cpsr_c, #ARM_MODE_IRQ + ARM_IRQ_BIT + ARM_FIQ_BIT
+    msr cpsr_c, #(ARM_MODE_IRQ | ARM_IRQ_BIT | ARM_FIQ_BIT)
     mov r0, lr
     mrs r1, spsr
 
@@ -85,7 +87,7 @@ asm_do_interrupt:
     str r0, [r1]
 
     /* moe to svc mode and load new task */
-    msr cpsr_c, #ARM_MODE_SVC + ARM_IRQ_BIT + ARM_FIQ_BIT
+    msr cpsr_c, #(ARM_MODE_SVC | ARM_IRQ_BIT | ARM_FIQ_BIT)
 
     /* inc task_siwthces count */
     ldr r2, _LCtask_switches
@@ -95,15 +97,18 @@ asm_do_interrupt:
 
     b arm7_9_load_context
 
-_LCint_level:
-    .long 0
+_LCirq_level:
+    .long irq_level
 _LCtask_switches:
     .long task_switches
 _LCplat_irq:
     .long platform_do_interrupt
 _LCcurrent:
     .long current
-    .global irq_stack_addr
-irq_stack_addr:
-    .space ARM_IRQ_STACK_SIZE, 0
-    .long 0xbadbeaf
+
+    .section ".data"
+irq_level:
+    .long 0
+
+/*--------------------------------------------------------------------------*/
+// EOF interrupt.S
