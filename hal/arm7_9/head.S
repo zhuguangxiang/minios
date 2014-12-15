@@ -85,12 +85,12 @@ _LCdeadbe01:
 /*--------------------------------------------------------------------------*/
 
     .section ".bss"
-#ifndef HAL_COMMON_INTERRUPTS_STACK_SIZE
-#define HAL_COMMON_INTERRUPTS_STACK_SIZE 4096
+#ifndef HAL_INTERRUPTS_STACK_SIZE
+#define HAL_INTERRUPTS_STACK_SIZE 4096
 #endif
     .balign 16
 __interupt_stack_base:
-    .rept HAL_COMMON_INTERRUPTS_STACK_SIZE
+    .rept HAL_INTERRUPTS_STACK_SIZE
     .byte 0
     .endr
     .balign 16

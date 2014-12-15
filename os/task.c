@@ -96,6 +96,9 @@ uint32_t task_switches;
 int32_t sched_lock = 1;
 task_t *current;
 
+list_head_t task_list;
+uint32_t task_count;
+
 /*--------------------------------------------------------------------------*/
 
 task_t *rq_pick_task(void)
@@ -132,9 +135,12 @@ static void schedule(void)
         task_switches++;
 
         // save time slice
-        if ((TASK_SUSPEND == from->state) && TIMER_ACTIVE_TASK(from))
+        if ((TASK_SUSPEND == from->state) && TICK_SCHED_TASK(from))
             from->time_slice = TICK_SCHED_QUANTUM;
 
+#ifdef TASK_STACK_CHECK
+        task_stack_check(to);
+#endif
         // switch context
         current = to;
         HAL_TASK_SWITCH_CONTEXT(&to->stack, &from->stack);
@@ -162,15 +168,88 @@ void task_unlock(void)
 
 /*--------------------------------------------------------------------------*/
 
-void task_create(task_t *task, char *name, uint8_t priority,
-    uint8_t options, addr_t stack_base, uint32_t stack_size,
-    task_entry_t entry, void *para)
+#ifdef TASK_STACK_CHECK
+void task_stack_check(task_t *to)
+{
+    uint32_t sig = (uint32_t)to;
+    uint32_t *base = (uint32_t *)task_get_stack_base(to);
+    uint32_t *top = (uint32_t *)(to->stack_base + to->stack_size);
+
+    BUG_ON((sizeof(addr_t) - 1) & (addr_t)base);
+    BUG_ON((sizeof(addr_t) - 1) & (addr_t)top);
+    BUG_ON(to->stack < (addr_t)base);
+    BUG_ON(to->stack > (addr_t)top);
+
+    for (int i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(uint32_t); i++) {
+        BUG_ON((sig ^ (i * 0x01010101)) != base[i]);
+        BUG_ON((sig ^ (i * 0x10101010)) != top[i]);
+    }
+}
+#endif
+
+#ifdef TASK_STACK_MEASURE
+uint32_t task_measure_stack_usage(task_t *task)
+{
+    uint32_t *base = (uint32_t *)task->stack_base;
+    uint32_t size = task->stack_size/sizeof(uint32_t);
+    int i;
+
+    for (i = 0; i < size; i ++) {
+        if (base[i] != 0xdeadbeaf)
+            break;
+    }
+
+    return (size - i) * sizeof(uint32_t);
+}
+#endif
+
+static void task_set_stack(task_t *task, addr_t s_base, uint32_t s_size)
+{
+#ifdef TASK_STACK_SIZE_MINIMUM
+    BUG_ON(s_size < TASK_STACK_SIZE_MINIMUM);
+#endif
+#ifdef TASK_STACK_CHECK
+    {
+        uint32_t sig = (uint32_t)task;
+        uint32_t *base = (uint32_t *)s_base;
+        uint32_t *top = (uint32_t *)(s_base + s_size -
+            TASK_STACK_CHECK_DATA_SIZE);
+        int i;
+        for (i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(uint32_t); i++) {
+            base[i] = (sig ^ (i * 0x01010101));
+            top[i] = (sig ^ (i * 0x10101010));
+        }
+        BUG_ON(&base[i] >= &top[0]);
+        s_base += i * sizeof(uint32_t);
+        s_size -= i * sizeof(uint32_t) * 2;
+        BUG_ON(s_size < 256);
+    }
+#endif
+#ifdef TASK_STACK_MEASURE
+    {
+        uint32_t *base = (uint32_t *)s_base;
+        uint32_t size = s_size/sizeof(uint32_t);
+        int i;
+        for (i = 0; i < size; i++)
+            base[i] = 0xdeadbeaf;
+    }
+#endif
+    task->stack_base = s_base;
+    task->stack_size = s_size;
+    task->stack = s_base + s_size;
+
+#ifdef TASK_STACK_CHECK
+    task_stack_check(task);
+#endif
+}
+
+void task_create(task_t *task, char *name, uint8_t priority, uint8_t flags,
+    addr_t stack_base, uint32_t stack_size, task_entry_t entry, void *para)
 {
     BUG_ON(priority >= SCHED_PRIORITY_MAX_NR);
 
-    task->stack_base = stack_base;
-    task->stack_size = stack_size;
-    task->stack = stack_base + stack_size;
+    task_set_stack(task, stack_base, stack_size);
+
     task->priority = priority;
     task->default_priority = priority;
     task->state = TASK_SUSPEND;
@@ -179,19 +258,24 @@ void task_create(task_t *task, char *name, uint8_t priority,
     task->time_slice = 0;
     INIT_TIMER(&task->timer);
     INIT_LIST_HEAD(&task->run_node);
+    INIT_LIST_HEAD(&task->list);
     task->name = name;
 
-    if (options & TICK_SCHED_FLAG) {
+    LIST_ADD(&task_list, &task->list);
+    ++task_count;
+
+    if (flags & TICK_SCHED_FLAG) {
         task->flags |= TICK_SCHED_FLAG;
         task->time_slice = TICK_SCHED_QUANTUM;
     }
 
-    if (options & URGENT_FLAG)
+    if (flags & URGENT_FLAG)
         task->flags |= URGENT_FLAG;
 
     HAL_TASK_BUILD_STACK(&task->stack);
 
-    task_resume(task);
+    if (flags & AUTO_START_FLAG)
+        task_resume(task);
 }
 
 static void task_timeout(void *para)
@@ -321,6 +405,9 @@ void task_exit(void)
     BUG_ON(current->cleanup != NULL);
     ++task_switches;
     current = rq_pick_task();
+#ifdef TASK_STACK_CHECK
+    task_stack_check(current);
+#endif
     HAL_LOAD_TASK_CONTEXT(&current->stack);
     HAL_ENABLE_INTERRUPTS();
 
@@ -328,7 +415,7 @@ void task_exit(void)
     BUG_ON(1);
 }
 
-void task_restart(task_t *task)
+void task_restart(task_t *task, uint8_t flags)
 {
     if (task->state != TASK_ZOMBIE)
         return;
@@ -336,18 +423,25 @@ void task_restart(task_t *task)
     task->stack = task->stack_base + task->stack_size;
     task->priority = task->default_priority;
     task->state = TASK_SUSPEND;
+    task->flags = 0;
 
-    if (TICK_SCHED_TASK(task))
+    if (flags & TICK_SCHED_FLAG) {
+        task->flags |= TICK_SCHED_FLAG;
         task->time_slice = TICK_SCHED_QUANTUM;
+    }
+
+    if (flags & URGENT_FLAG)
+        task->flags |= URGENT_FLAG;
 
     HAL_TASK_BUILD_STACK(&task->stack);
 
-    task_resume(task);
+    if (flags & AUTO_START_FLAG)
+        task_resume(task);
 }
 
 /*--------------------------------------------------------------------------*/
 
-static TASK_STRUCT(idle_task, IDLE_TASK_STACK_SIZE);
+static TASK_UNION(idle_task, IDLE_TASK_STACK_SIZE);
 
 static void idle_task_entry(void *para)
 {
@@ -356,8 +450,8 @@ static void idle_task_entry(void *para)
 
 static inline void init_idle_task(void)
 {
-    task_struct_create(&idle_task, "idle_task", SCHED_PRIORITY_MAX_NR - 1, 0,
-        idle_task_entry, NULL);
+    task_union_create(&idle_task, "idle_task", SCHED_PRIORITY_MAX_NR - 1,
+        AUTO_START_FLAG, IDLE_TASK_STACK_SIZE, idle_task_entry, NULL);
 }
 
 /*--------------------------------------------------------------------------*/
@@ -367,6 +461,7 @@ void init_sched(void)
     for (int i = 0; i < SCHED_PRIORITY_MAX_NR; i++)
         INIT_LIST_HEAD(run_queue.queue_array + i);
     run_queue.highest_priority = SCHED_PRIORITY_MAX_NR - 1;
+    INIT_LIST_HEAD(&task_list);
     init_idle_task();
 }
 

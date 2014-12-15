@@ -124,8 +124,8 @@ void printf(const char *fmt)
     }
 }
 
-static DEFAULT_TASK_STRUCT(test_task_1);
-static DEFAULT_TASK_STRUCT(test_task_2);
+static DEFAULT_TASK_UNION(test_task_1);
+static DEFAULT_TASK_UNION(test_task_2);
 
 void test_task_1_entry(void *p)
 {
@@ -147,7 +147,7 @@ void test_task_2_entry(void *p)
         //task_sleep(1);
 	    //task_yield();
 		++count;
-		if (count > 10000000) {
+		if (count > 100000) {
 			timer_start(&test_timer, 100, test_timer_func, 0);
 			task_exit();
 		}
@@ -158,10 +158,10 @@ void application_start(void)
 {
 	S3C2440_Init_Timer();
 
-    task_struct_create(&test_task_1, "test_task_1", 8, TICK_SCHED_FLAG,
+    default_task_union_create(&test_task_1, "test_task_1", 8, AUTO_START_FLAG | TICK_SCHED_FLAG,
         test_task_1_entry, NULL);
 
-    task_struct_create(&test_task_2, "test_task_2", 8, TICK_SCHED_FLAG,
+    default_task_union_create(&test_task_2, "test_task_2", 8, AUTO_START_FLAG | TICK_SCHED_FLAG,
         test_task_2_entry, NULL);
 }
 

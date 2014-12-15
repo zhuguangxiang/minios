@@ -5,25 +5,15 @@
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
 
-#ifndef _HAL_ARM7_9_CONST_H_
-#define _HAL_ARM7_9_CONST_H_
+#ifndef _MINIOS_CONST_H_
+#define _MINIOS_CONST_H_
 
-#define ARM_MODE_SVC    0x13
-#define ARM_MODE_IRQ    0x12
-#define ARM_IRQ_BIT     (1 << 7)
-#define ARM_FIQ_BIT     (1 << 6)
+#define TASK_STACK_CHECK
+#define TASK_STACK_CHECK_DATA_SIZE 32
+#define TASK_STACK_MEASURE
+#define TASK_STACK_SIZE_MINIMUM 512
 
-#define S_FRAME_SIZE    64
-#define S_PSR           60
-#define S_PC            56
-
-#define HAL_USE_INTERRUPT_STACK
-
-#define HAL_COMMON_INTERRUPTS_STACK_SIZE 8192
-
-#define HAL_STARTUP_STACK_SIZE 1024
-
-#endif // _HAL_ARM7_9_CONST_H_
+#endif // _MINIOS_CONST_H_
 
 /*--------------------------------------------------------------------------*/
-// EOF cpu_const.h
+// EOF os_const.h

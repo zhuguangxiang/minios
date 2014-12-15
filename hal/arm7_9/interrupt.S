@@ -6,6 +6,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "hal/arm7_9/cpu_const.h"
+#include "os/os_const.h"
 
     .global asm_do_interrupt
 asm_do_interrupt:
@@ -95,6 +96,12 @@ asm_do_interrupt:
     add r1, r1, #1
     str r1, [r2]
 
+#ifdef TASK_STACK_CHECK
+    bl task_stack_check
+    ldr r1, _LCcurrent
+    ldr r0, [r1]
+#endif
+
     b arm7_9_load_context
 
 _LCirq_level:
@@ -106,7 +113,7 @@ _LCplat_irq:
 _LCcurrent:
     .long current
 
-    .section ".data"
+    .section ".bss"
 irq_level:
     .long 0
 

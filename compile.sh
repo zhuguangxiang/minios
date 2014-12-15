@@ -5,6 +5,7 @@ CC=$ARCH-gcc
 LD=$ARCH-ld
 AR=$ARCH-ar
 OBJDUMP=$ARCH-objdump
+OBJCOPY=$ARCH-objcopy
 C_OPT="-O0 -fno-omit-frame-pointer"
 C_DBG="-g"
 C_WARN="-Wall -Wformat -Wstrict-prototypes -Wstrict-aliasing"
@@ -50,6 +51,12 @@ function dump()
 	`$OBJDUMP -D $1 > $2`
 }
 
+function bin()
+{
+    echo "[BIN] $2"
+	`$OBJCOPY -O binary $1 $2`
+}
+
 if [ ! -d obj ]; then
 mkdir obj
 fi
@@ -71,4 +78,6 @@ compile "app/app.c"
 
 ld "minios.elf" "obj/app/*.o" "obj/hal/arm7_9/*.o" "obj/hal/s3c2440/*.o" "-los -L."
 dump "minios.elf" "minios.elf.dump.txt"
+bin "minios.elf" "minios.bin"
+
 
