@@ -6,7 +6,7 @@ LD=$ARCH-ld
 AR=$ARCH-ar
 OBJDUMP=$ARCH-objdump
 OBJCOPY=$ARCH-objcopy
-C_OPT="-O0 -fno-omit-frame-pointer"
+C_OPT="-fno-omit-frame-pointer -O0"
 C_DBG="-g"
 C_WARN="-Wall -Wformat -Wstrict-prototypes -Wstrict-aliasing"
 C_ARCH="-mapcs-frame -std=gnu99 -mbig-endian -march=armv4"

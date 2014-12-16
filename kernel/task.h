@@ -122,7 +122,7 @@ uint32_t task_measure_stack_usage(task_t *task);
 
 /*--------------------------------------------------------------------------*/
 
-void task_yield(void);
+VOID task_yield(VOID);
 void task_sleep(int32_t ticks);
 void task_exit(void);
 void task_restart(task_t *task, uint8_t flags);
