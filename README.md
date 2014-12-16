@@ -15,3 +15,8 @@ Embedded Operating System Just Funny
 	+ .h, .c and .S file format
     + stack check
 
+*v003:*
+	+ adjust directories
+    + format comments
+    + minios project framework
+
