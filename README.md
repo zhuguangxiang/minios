@@ -20,3 +20,9 @@ Embedded Operating System Just Funny
     + format comments
     + minios project framework
 
+*v0.04*
+    + version number change to vx.yz
+    + wait queue implemented
+    + interrupt is divided into ISR and HSR(enabled interrupt mode)
+    + init various modules using gcc section
+
