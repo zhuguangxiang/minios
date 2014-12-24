@@ -16,11 +16,13 @@ Embedded Operating System Just Funny
     + stack check
 
 *v003:*
+
 	+ adjust directories
     + format comments
     + minios project framework
 
 *v0.04*
+
     + version number change to vx.yz
     + wait queue implemented
     + interrupt is divided into ISR and HSR(enabled interrupt mode)
