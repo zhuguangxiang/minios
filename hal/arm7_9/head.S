@@ -1,11 +1,18 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**MOD+************************************************************************/
+/* Module:  head.S                                                            */
+/*                                                                            */
+/* Purpose: ARM7&9 start                                                      */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**MOD-************************************************************************/
 
 #include "hal/arm7_9/cpu_const.h"
+#include "config/config.h"
 
     .global _start
 _start:
@@ -41,11 +48,6 @@ _init:
 #else
     ldr sp, _LCstartup_stack
 #endif
-    // init minios
-    bl os_init
-
-    // start application
-    bl application_start
 
     // start minios
     bl os_start
@@ -53,7 +55,7 @@ _init:
 _start_halt:
     b _start_halt
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 
 _undef_instr:
     b _undef_instr
@@ -82,7 +84,7 @@ _LCbss_end:
 _LCdeadbe01:
     .long 0xdeadbe01
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 
     .section ".bss"
 #ifndef HAL_INTERRUPTS_STACK_SIZE
@@ -110,7 +112,7 @@ __startup_stack_base:
     .balign 16
 __startup_stack:
 
-#endif
+#endif /* HAL_USE_INTERRUPT_STACK */
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF head.S

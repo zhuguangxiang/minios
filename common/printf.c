@@ -1,7 +1,7 @@
-/**INC+************************************************************************/
-/* Header:  cpu.h                                                             */
+/**MOD+************************************************************************/
+/* Module:  printf.c                                                          */
 /*                                                                            */
-/* Purpose: ARM7&9 const                                                      */
+/* Purpose: standard printf implementation                                    */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -9,21 +9,27 @@
 /*                                                                            */
 /* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
 /*                                                                            */
-/**INC-************************************************************************/
+/**MOD-************************************************************************/
 
-#ifndef _HAL_ARM7_9_CONST_H_
-#define _HAL_ARM7_9_CONST_H_
+#include "common/stdio.h"
+#include "common/stdarg.h"
+#include "config/config.h"
 
-#define ARM_MODE_SVC    0x13
-#define ARM_MODE_IRQ    0x12
-#define ARM_IRQ_BIT     (1 << 7)
-#define ARM_FIQ_BIT     (1 << 6)
+int vsnprintf(char *buf, int size, const char *fmt, va_list args);
 
-#define S_FRAME_SIZE    64
-#define S_PSR           60
-#define S_PC            56
+VOID printf(CONST CHAR *fmt, ...)
+{
+    int count;
+    char buf[PRINT_BUF_SIZE];
+    va_list args;
 
-#endif /* _HAL_ARM7_9_CONST_H_ */
+    va_start(args, fmt);
+    count = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    buf[count] = 0;
+    puts(buf);
+}
 
 /******************************************************************************/
-// EOF cpu_const.h
+// EOF stdio.c

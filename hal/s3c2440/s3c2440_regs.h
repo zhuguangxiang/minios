@@ -1,9 +1,15 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**INC+************************************************************************/
+/* Header:  s3c2440_regs.h                                                    */
+/*                                                                            */
+/* Purpose: s3c2440 registers                                                 */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**INC-************************************************************************/
 
 #ifndef _HAL_S3C2440_REG_H_
 #define _HAL_S3C2440_REG_H_
@@ -178,7 +184,7 @@
 #define SUBSRCPND  (INTERRUPT_BASE + 0x18)
 #define INTSUBMASK (INTERRUPT_BASE + 0x1c)
 
-#endif // _MINIOS_S3C2440_REG_H_
+#endif /* _HAL_S3C2440_REG_H_ */
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF s3c2440_regs.h

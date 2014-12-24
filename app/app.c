@@ -5,108 +5,12 @@
 /*                           All Rights Reserved                            */
 /*--------------------------------------------------------------------------*/
 
-#include "os/task.h"
+#include "kernel/task.h"
+#include "kernel/wait_queue.h"
 #include "hal/s3c2440/s3c2440_io.h"
 #include "hal/s3c2440/s3c2440_regs.h"
 #include "hal/s3c2440/s3c2440_interrupt.h"
-
-void printf(const char *fmt);
-
-/*
-    1(1s), 10(100ms), 20(50ms), 50(20ms), 100(10ms),
-    200(5ms), 250(4ms), 500(2ms), 1000(1ms)
- */
-#define OS_HZ 100
-
-static inline int32_t ms_to_ticks(int32_t ms)
-{
-    int32_t ticks;
-
-    if (ms <= 0)
-        return 0;
-
-    if (ms * OS_HZ <= 1000) /* ms <= 1000/OS_HZ */
-        ticks = 1;
-    else
-        ticks = (ms * OS_HZ) / 1000; /* ms / (1000/OS_HZ) */
-
-    return ticks;
-}
-
-static inline int32_t second_to_ticks(int32_t second)
-{
-    return ms_to_ticks(1000*second);
-}
-
-static inline int32_t minute_to_ticks(int32_t minute)
-{
-    return second_to_ticks(60*minute);
-}
-
-static inline int32_t hour_to_ticks(int32_t hour)
-{
-    return minute_to_ticks(60*hour);
-}
-
-#define S3C2440_IRQ_TIMER0  10
-#define S3C2440_Enable_IRQ s3c2440_enable_irq
-#define S3C2440_Disable_IRQ s3c2440_disable_irq
-#define S3C2440_Clear_IRQ s3c2440_clear_irq
-
-void tick_increase(void);
-timer_t test_timer = TIMER_INIT(test_timer);
-void test_timer_func(void *data)
-{
-	extern volatile uint32_t jiffies;
-	uint32_t tick = jiffies;
-	while (1) {
-		printf("test_timer\r\n");
-		if (tick < jiffies)
-			break;
-	}
-}
-
-void S3C2440_Do_Timer_Interrupt(int irq, void *data)
-{
-    S3C2440_Disable_IRQ(irq);
-    S3C2440_Clear_IRQ(irq);
-    tick_increase();
-    S3C2440_Enable_IRQ(irq);
-}
-
-bool_t S3C2440_Init_Timer(void)
-{
-    uint32_t tmp;
-
-    register_irq(S3C2440_IRQ_TIMER0, S3C2440_Do_Timer_Interrupt, NULL);
-
-    tmp = READ_REG(TCFG0);
-    tmp |= 199; /* prescaler=199 */
-    WRITE_REG(TCFG0, tmp);
-
-    tmp = READ_REG(TCFG1);
-    tmp |= 1; /* divider = 1/4 */
-    WRITE_REG(TCFG1, tmp);
-
-    tmp = (62500 / OS_HZ); /* timer count */
-    WRITE_REG(TCNTB0, tmp);
-
-    /* manual update bit */
-    tmp = READ_REG(TCON);
-    tmp |= 2;
-    WRITE_REG(TCON, tmp);
-
-    /* start timer0, auto-reload and clear manual update bit */
-    tmp = READ_REG(TCON);
-    tmp |= 9;
-    tmp &= ~2;
-    WRITE_REG(TCON, tmp);
-
-    /* enable irq */
-    S3C2440_Enable_IRQ(S3C2440_IRQ_TIMER0);
-
-    return TRUE;
-}
+#include "common/stdio.h"
 
 #define UAR0_TX_FIFO_FULL()  ((READ_REG(UFSTAT0) & 0x4000) ? 1 : 0)
 
@@ -117,20 +21,32 @@ void put_char(char ch)
     WRITE_REG(UTXHB0, ch); /* big-endian */
 }
 
-void printf(const char *fmt)
+void puts(const char *fmt)
 {
     while (*fmt) {
         put_char (*fmt++);
     }
 }
 
-static DEFAULT_TASK_UNION(test_task_1);
-static DEFAULT_TASK_UNION(test_task_2);
+
+union {
+	TASK _task;
+	char _stack[8192];
+} test_task_1, test_task_2, test_task_3;
+
+WAIT_QUEUE wq = WAIT_QUEUE_INIT(wq, WQ_TYPE_PRIO);
+
+INT wake_up_func(VOID *data1, VOID *data2)
+{
+	printf("wakeup %s\r\n", ((TASK*)data1)->name);
+	return 0;
+}
 
 void test_task_1_entry(void *p)
 {
     while (1) {
-        printf("test_task_1\r\n");
+        printf("%s\r\n", current->name);
+		sleep_on(&wq, 0, current);
         //task_sleep(1);
         //task_struct_resume(&test_task_2, 0);
 		//task_yield();
@@ -141,28 +57,70 @@ void test_task_2_entry(void *p)
 {
 	int count = 0;
     while (1) {
-        printf("test_task_2\r\n");
+        printf("%s\r\n", current->name);
 		//task_sleep(1);
         //task_struct_resume(&test_task_1, 0);
         //task_sleep(1);
 	    //task_yield();
 		++count;
-		if (count > 100000) {
-			timer_start(&test_timer, 100, test_timer_func, 0);
-			task_exit();
-		}
+		sleep_on(&wq, 0, current);
     }
 }
 
-void application_start(void)
+void test_task_3_entry(void *p)
 {
-	S3C2440_Init_Timer();
+    TASK_PARA task_para = {
+        .name = "test_task_2",
+        .priority = 9,
+        .flags = TASK_FLAGS_TICK_SCHED,
+        .entry = test_task_2_entry,
+        .para = NULL,
+        .stack_base = (ADDRESS)&test_task_2 + sizeof(TASK),
+        .stack_size = 8192 - sizeof(TASK),
+    };
 
-    default_task_union_create(&test_task_1, "test_task_1", 8, AUTO_START_FLAG | TICK_SCHED_FLAG,
-        test_task_1_entry, NULL);
+	task_create((TASK *)&test_task_2, &task_para, 1);
 
-    default_task_union_create(&test_task_2, "test_task_2", 8, AUTO_START_FLAG | TICK_SCHED_FLAG,
-        test_task_2_entry, NULL);
+	int count = 0;
+    while (1) {
+        printf("%s\r\n", current->name);
+		//task_sleep(1);
+        //task_struct_resume(&test_task_1, 0);
+        task_sleep(1);
+	    //task_yield();
+		++count;
+		wake_up_all(&wq, wake_up_func, NULL);
+    }
+}
+
+void app_start(void)
+{
+    TASK_PARA task_para = {
+        .name = "test_task_1",
+        .priority = 10,
+        .flags = TASK_FLAGS_TICK_SCHED,
+        .entry = test_task_1_entry,
+        .para = NULL,
+        .stack_base = (ADDRESS)&test_task_1 + sizeof(TASK),
+        .stack_size = 8192 - sizeof(TASK),
+    };
+
+    task_create((TASK *)&test_task_1, &task_para, 1);
+
+	task_para.name = "test_task_2";
+	task_para.entry = test_task_2_entry;
+	task_para.priority = 9;
+	task_para.stack_base = (ADDRESS)&test_task_2 + sizeof(TASK);
+
+	//task_create((TASK *)&test_task_2, &task_para, 1);
+
+	task_para.name = "test_task_3";
+	task_para.entry = test_task_3_entry;
+	task_para.priority = 13;
+	task_para.stack_base = (ADDRESS)&test_task_3 + sizeof(TASK);
+
+	task_create((TASK *)&test_task_3, &task_para, 1);
+
 }
 
 /*--------------------------------------------------------------------------*/

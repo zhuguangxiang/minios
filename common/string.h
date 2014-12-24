@@ -1,7 +1,7 @@
 /**INC+************************************************************************/
-/* Header:  s3c2440_interrupt.h                                               */
+/* Header:  string.h                                                          */
 /*                                                                            */
-/* Purpose: s3c2440 interrupt functions                                       */
+/* Purpose: string functions for MiniOS                                       */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -11,32 +11,23 @@
 /*                                                                            */
 /**INC-************************************************************************/
 
-#ifndef _HAL_S3C2440_INTERRUPT_H_
-#define _HAL_S3C2440_INTERRUPT_H_
+#ifndef _MINIOS_STRING_H_
+#define _MINIOS_STRING_H_
 
-#include "common/types.h"
+void *memcpy(void *dst, void *src, int size);
+void *memset(void *dst, int s, int count);
+int memcmp(const void *dst, const void *src, int count);
+void *memmove(void *dst, const void *src, int count);
 
-VOID s3c2440_enable_irq(INT irq);
-VOID s3c2440_disable_irq(INT irq);
-VOID s3c2440_clear_irq(INT irq);
-INT s3c2440_get_irq(VOID);
-VOID s3c2440_enable_subirq(INT subirq);
-VOID s3c2440_disable_subirq(INT subirq);
-VOID s3c2440_clear_subirq(INT subirq);
-INT s3c2440_get_subirq(VOID);
+char *strcpy(char *s1, const char *s2);
+int strlen(const char *s);
+int strcmp(const char *s1, const char *s2);
 
-typedef VOID (*INT_HANDLE)(INT, VOID *);
-VOID register_irq(INT irq, INT_HANDLE handler, VOID *data);
+char *itoa(int value, char *s, int base);
+unsigned int strtoul(const char *cp, char **endp, unsigned int base);
+int strtol(const char *cp, char **endp, unsigned int base);
 
-#define S3C2440_IRQS_NR     32
-#define S3C2440_IRQ_TIMER0  10
-#define S3C2440_IRQ_UART0   28
-#define S3C2440_IRQ_ADC		31
-
-#define S3C2440_SUBIRQ_ADC_S	10
-#define S3C2440_SUBIRQ_TC		9
-
-#endif /* _HAL_S3C2440_INTERRUPT_H_ */
+#endif /* _MINIOS_STRING_H_ */
 
 /******************************************************************************/
-// EOF s3c2440_interrupt.h
+// EOF string.h

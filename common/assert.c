@@ -1,7 +1,7 @@
-/**INC+************************************************************************/
-/* Header:  cpu.h                                                             */
+/**MOD+************************************************************************/
+/* Module:  assert.c                                                          */
 /*                                                                            */
-/* Purpose: ARM7&9 const                                                      */
+/* Purpose:  Unexpected things happen, __assert_fail                          */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -9,21 +9,16 @@
 /*                                                                            */
 /* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
 /*                                                                            */
-/**INC-************************************************************************/
+/**MOD-************************************************************************/
 
-#ifndef _HAL_ARM7_9_CONST_H_
-#define _HAL_ARM7_9_CONST_H_
+#include "common/stdio.h"
+#include "common/panic.h"
 
-#define ARM_MODE_SVC    0x13
-#define ARM_MODE_IRQ    0x12
-#define ARM_IRQ_BIT     (1 << 7)
-#define ARM_FIQ_BIT     (1 << 6)
-
-#define S_FRAME_SIZE    64
-#define S_PSR           60
-#define S_PC            56
-
-#endif /* _HAL_ARM7_9_CONST_H_ */
+void __assert_fail(const char *exp, const char *file, int line)
+{
+    printf("Assertion failed: \'%s\', file:%s, line:%d.\n\r", exp, file, line);
+    panic(0);
+}
 
 /******************************************************************************/
-// EOF cpu_const.h
+// EOF assert.c

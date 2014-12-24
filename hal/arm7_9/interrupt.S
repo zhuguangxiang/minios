@@ -1,12 +1,18 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**MOD+************************************************************************/
+/* Module:  interrupt.S                                                       */
+/*                                                                            */
+/* Purpose: ARM7&9 interrupt                                                  */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**MOD-************************************************************************/
 
 #include "hal/arm7_9/cpu_const.h"
-#include "os/os_const.h"
+#include "config/config.h"
 
     .global asm_do_interrupt
 asm_do_interrupt:
@@ -39,17 +45,17 @@ asm_do_interrupt:
 
     /* enable irq */
     mrs r0, cpsr
-    bic r0, r0, #0x80
+    bic r0, r0, #ARM_IRQ_BIT
     msr cpsr, r0
 
-    bl handle_pending_hsrs
+    bl isr_handle_pending_hsrs
 
     /* diable irq */
     mrs r0, cpsr
-    orr r0, r0, #0x80
+    orr r0, r0, #ARM_IRQ_BIT
     msr cpsr, r0
 
-    bl need_sched
+    bl rq_need_sched
 
     ldmfd sp!, {lr}
     msr spsr, lr
@@ -117,5 +123,5 @@ _LCcurrent:
 irq_level:
     .long 0
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF interrupt.S

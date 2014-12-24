@@ -1,133 +1,189 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**INC+************************************************************************/
+/* Header:  task.h                                                            */
+/*                                                                            */
+/* Purpose: task management of MiniOS kenrel                                  */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**INC-************************************************************************/
 
 #ifndef _MINIOS_TASK_H_
 #define _MINIOS_TASK_H_
 
-#include "os/timer.h"
-#include "os/os_const.h"
+#include "common/types.h"
+#include "common/list.h"
+#include "kernel/timer.h"
+#include "config/config.h"
 
-#define SCHED_PRIORITY_MAX_NR 32
-#define TICK_SCHED_QUANTUM    10
+/******************************************************************************/
+/* Macros of task state                                                       */
+/* MiniOS has only three state, running, suspend, and zombie. When task is    */
+/* created, its state is suspend. When task is finished, its state is zombie. */
+/******************************************************************************/
+#define TASK_STATE_RUNNING    1
+#define TASK_STATE_SUSPEND    2
+#define TASK_STATE_ZOMBIE     3
 
-#define TICK_SCHED_FLAG    (1 << 0)
-#define TIMER_ACTIVE_FLAG  (1 << 1)
-#define URGENT_FLAG        (1 << 2)
-#define AUTO_START_FLAG    (1 << 3)
+/******************************************************************************/
+/* Macros of task flags                                                       */
+/* If TICK_SCHED is set, the task is scheduled by tick clock.                 */
+/* If URGENT is set, the task is firstly scheduled with the same priority.    */
+/******************************************************************************/
+#define TASK_FLAGS_TICK_SCHED    (1 << 0)
+#define TASK_FLAGS_URGENT        (1 << 1)
 
-#define TICK_SCHED_TASK(task) \
-    (((task)->flags & TICK_SCHED_FLAG) ? TRUE : FALSE)
+/**STRUCT+*********************************************************************/
+/* Structure: TASK                                                            */
+/*                                                                            */
+/* Description: Task control block                                            */
+/**STRUCT-*********************************************************************/
+typedef VOID (*TASK_ENTRY)(VOID *);
+typedef VOID (*CLEANUP)(VOID *);
+typedef struct task {
+    /**************************************************************************/
+    /* Stack top address, MUST be first of TASK structure                     */
+    /**************************************************************************/
+    ADDRESS stack;
 
-#define URGENT_TASK(task) \
-    (((task)->flags & URGENT_FLAG) ? TRUE : FALSE)
+    /**************************************************************************/
+    /* Stack base address                                                     */
+    /**************************************************************************/
+    ADDRESS stack_base;
 
-#define TIMER_ACTIVE_TASK(task) \
-    (((task)->flags & TIMER_ACTIVE_FLAG) ? TRUE : FALSE)
+    /**************************************************************************/
+    /* Stack size                                                             */
+    /**************************************************************************/
+    ULONG stack_size;
 
-#define TASK_RUNNING  1
-#define TASK_SUSPEND  2
-#define TASK_ZOMBIE   3
+    /**************************************************************************/
+    /* Task lock count                                                        */
+    /**************************************************************************/
+    INT lock_count;
 
-typedef void (*task_entry_t)(void *);
-typedef void (*cleanup_t)(void *);
+    /**************************************************************************/
+    /* Task state, one of TASK_STATE_(RUNNING, SUSPEND, ZOMBIE)               */
+    /**************************************************************************/
+    BYTE state;
 
+    /**************************************************************************/
+    /* Task flags, one of TASK_STATE_(TICK_SCHED, URGENT, AUTO_START)         */
+    /**************************************************************************/
+    BYTE flags;
+
+    /**************************************************************************/
+    /* Task priority                                                          */
+    /**************************************************************************/
+    BYTE priority;
+
+    /**************************************************************************/
+    /* Task default priority                                                  */
+    /**************************************************************************/
+    BYTE default_priority;
+
+    /**************************************************************************/
+    /* Task time slice schedule value                                         */
+    /**************************************************************************/
+    INT time_slice;
+
+    /**************************************************************************/
+    /* Task running node in running queue                                     */
+    /**************************************************************************/
+    LQE run_node;
+
+    /**************************************************************************/
+    /* Task entry function                                                    */
+    /**************************************************************************/
+    TASK_ENTRY entry;
+
+    /**************************************************************************/
+    /* Task parameter                                                         */
+    /**************************************************************************/
+    VOID *para;
+
+    /**************************************************************************/
+    /* Task sleep timer                                                       */
+    /**************************************************************************/
+    TIMER timer;
+
+    /**************************************************************************/
+    /* Task cleanup function used for waiting resource timeout                */
+    /**************************************************************************/
+    CLEANUP cleanup;
+
+    /**************************************************************************/
+    /* Task cleanup data                                                      */
+    /**************************************************************************/
+    VOID *cleanup_info;
+
+    /**************************************************************************/
+    /* Task list                                                              */
+    /**************************************************************************/
+    LQE list;
+
+    /**************************************************************************/
+    /* Task name                                                              */
+    /**************************************************************************/
+    CONST CHAR *name;
+} TASK;
+
+/**STRUCT+*********************************************************************/
+/* Structure: TASK_PARA                                                       */
+/*                                                                            */
+/* Description: Task creating parameters                                      */
+/**STRUCT-*********************************************************************/
 typedef struct {
-    addr_t stack;                  /* stack top pointer, must be first      */
-    addr_t stack_base;             /* stack base pointer                    */
-    uint32_t stack_size;           /* stack size                            */
+    CONST CHAR *name;        /* task name               */
+    BYTE priority;           /* task priority           */
+    BYTE flags;              /* task flags              */
+    TASK_ENTRY entry;        /* task entry function     */
+    VOID *para;              /* task private data       */
+    ADDRESS stack_base;      /* task stack base address */
+    ULONG stack_size;        /* task stack size         */
+} TASK_PARA;
 
-    uint8_t state;                 /* (RUNNING, SUSPEND, ZOMBIE)            */
-    uint8_t flags;                 /* TICK_SCHED, TIMER_ACTIVE, URGENT, ... */
-    uint8_t priority;              /* priority                              */
-    uint8_t default_priority;      /* default priority                      */
+/******************************************************************************/
+/* Current task control block, can be used directly                           */
+/******************************************************************************/
+extern TASK *current;
 
-    list_head_t run_node;          /* running list in run queue             */
+/**API+************************************************************************/
 
-    int32_t time_slice;            /* time slice                            */
+VOID task_lock(VOID);
+VOID task_unlock(VOID);
 
-    timer_t timer;                 /* timer for task waiting something      */
+VOID task_create(TASK *task, TASK_PARA *para, BOOL auto_start);
+VOID task_suspend(TASK *task, LONG ticks, CLEANUP cleanup, VOID *info);
+VOID task_resume(TASK *task);
 
-    task_entry_t entry;            /* task entry function                   */
-    void *para;                    /* task parameter                        */
+VOID task_yield(VOID);
+VOID task_sleep(INT ticks);
+VOID task_exit(VOID);
 
-    cleanup_t cleanup;             /* timeout to cleanup some resource      */
-    void *cleanup_info;            /* clean up private data                 */
-
-    list_head_t list;              /* all tasks list                        */
-
-    char *name;                    /* task name                             */
-} task_t;
-
-/*--------------------------------------------------------------------------*/
-
-void task_lock(void);
-void task_unlock(void);
-void task_create(task_t *task, char *name, uint8_t priority, uint8_t flags,
-    addr_t stack_base, uint32_t stack_size, task_entry_t entry, void *para);
-void task_suspend(task_t *task, int32_t ticks, cleanup_t cleanup, void *info);
-void task_resume(task_t *task);
-
-/*--------------------------------------------------------------------------*/
-
-#define TASK_DEFAULT_STACK_SIZE 8192
-#define IDLE_TASK_STACK_SIZE    4096
-
-#define TASK_UNION(name, stacksize) \
-union {                             \
-    task_t _task;                   \
-    uint8_t _stack[stacksize];      \
-} name
-
-#define DEFAULT_TASK_UNION(name) TASK_UNION(name, TASK_DEFAULT_STACK_SIZE)
-
-static inline void task_union_create(void *t, char *name, uint8_t priority,
-    uint8_t flags, uint32_t stack_size, task_entry_t entry, void *para)
-{
-    task_t *task = (task_t *)t;
-    task_create(task, name, priority, flags, (addr_t)(task + 1),
-        stack_size - sizeof(task_t), entry, para);
-}
-
-static inline void default_task_union_create(void *t, char *name,
-    uint8_t priority, uint8_t flags, task_entry_t entry, void *para)
-{
-    task_t *task = (task_t *)t;
-    task_create(task, name, priority, flags, (addr_t)(task + 1),
-        TASK_DEFAULT_STACK_SIZE - sizeof(task_t), entry, para);
-}
-
-/*--------------------------------------------------------------------------*/
-
-static inline uint32_t task_get_stack_base(task_t *task)
+STATIC INLINE ULONG task_get_stack_base(TASK *task)
 {
     return task->stack_base - TASK_STACK_CHECK_DATA_SIZE;
 }
 
-static inline uint32_t task_get_stack_size(task_t *task)
+STATIC INLINE ULONG task_get_stack_size(TASK *task)
 {
     return task->stack_size + 2 * TASK_STACK_CHECK_DATA_SIZE;
 }
 
 #ifdef TASK_STACK_CHECK
-void task_stack_check(task_t *to);
+VOID task_stack_check(TASK *to);
 #endif
 
 #ifdef TASK_STACK_MEASURE
-uint32_t task_measure_stack_usage(task_t *task);
+ULONG task_measure_stack_usage(TASK *task);
 #endif
 
-/*--------------------------------------------------------------------------*/
+/**API-************************************************************************/
 
-VOID task_yield(VOID);
-void task_sleep(int32_t ticks);
-void task_exit(void);
-void task_restart(task_t *task, uint8_t flags);
+#endif /* _MINIOS_TASK_H_ */
 
-#endif // _MINIOS_TASK_H_
-
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF task.h

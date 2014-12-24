@@ -1,35 +1,75 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**INC+************************************************************************/
+/* Header:  hsr.h                                                             */
+/*                                                                            */
+/* Purpose: High Service Routine used by interrupt                            */
+/*          MiniOS supports ISR(diable irq) and HSR(enable irq)               */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**INC-************************************************************************/
 
 #ifndef _MINIOS_HSR_H_
 #define _MINIOS_HSR_H_
 
-#include "os/minios_type.h"
-#include "os/list.h"
+#include "common/types.h"
+#include "common/list.h"
 
-#define HSR_PRIORITY_MAX_NR 8
-
-typedef void (*hsr_func_t)(void *);
-
+/**STRUCT+*********************************************************************/
+/* Structure: HSR                                                             */
+/*                                                                            */
+/* Description: High Service Routine(HSR is based on priority)                */
+/**STRUCT-*********************************************************************/
+typedef VOID (*HSR_FUNC)(VOID *);
 typedef struct {
-    list_head_t node;
-    hsr_func_t function;
-    void *data;
-    int32_t count;
-    uint8_t priority;
-    char *desc;
-} hsr_t;
+    /**************************************************************************/
+    /* hsr running node                                                       */
+    /**************************************************************************/
+    LQE node;
 
-#define DECLARE_HSR(name, prio, func, desc) \
-    hsr_t name = {LIST_HEAD_INIT((name).node), func, NULL, 0, prio, desc}
+    /**************************************************************************/
+    /* hsr callback                                                           */
+    /**************************************************************************/
+    HSR_FUNC func;
 
-void activiate_hsr(hsr_t *, void *);
+    /**************************************************************************/
+    /* hsr user data                                                          */
+    /**************************************************************************/
+    VOID *data;
 
-#endif // _MINIOS_HSR_H_
+    /**************************************************************************/
+    /* hsr activiated count                                                   */
+    /**************************************************************************/
+    INT count;
 
-/*--------------------------------------------------------------------------*/
+    /**************************************************************************/
+    /* hsr priority                                                           */
+    /**************************************************************************/
+    BYTE priority;
+
+    /**************************************************************************/
+    /* hsr description                                                        */
+    /**************************************************************************/
+    CHAR *desc;
+} HSR;
+
+/******************************************************************************/
+/* Macro to declare a HSR                                                     */
+/******************************************************************************/
+#define HSR_INIT(name, prio, func, desc) \
+    {LIST_INIT((name).node), func, NULL, 0, prio, desc}
+
+/**API+************************************************************************/
+
+VOID handle_pending_hsrs(VOID);
+VOID activiate_hsr(HSR *hsr, VOID *data);
+
+/**API-************************************************************************/
+
+#endif /* _MINIOS_HSR_H_ */
+
+/******************************************************************************/
 // EOF hsr.h

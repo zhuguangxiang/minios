@@ -1,38 +1,73 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**INC+************************************************************************/
+/* Header:  timer.h                                                           */
+/*                                                                            */
+/* Purpose: Timer Management of MiniOS                                        */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**INC-************************************************************************/
 
 #ifndef _MINIOS_TIMER_H_
 #define _MINIOS_TIMER_H_
 
-#include "os/minios_type.h"
-#include "os/list.h"
+#include "common/types.h"
+#include "common/list.h"
+#include "config/config.h"
 
-typedef void (*timeout_t)(void *);
+/**STRUCT+*********************************************************************/
+/* Structure: TIMER                                                           */
+/*                                                                            */
+/* Description: Timer control block                                           */
+/**STRUCT-*********************************************************************/
+typedef VOID (*TIMEOUT_PROC)(VOID *);
+typedef struct timer {
+    /**************************************************************************/
+    /* Timer added to system timer_active_list                                */
+    /**************************************************************************/
+    LQE tm_node;
 
-typedef struct {
-    list_head_t node;
-    uint32_t expires;
-    timeout_t proc;
-    void *data;
-} timer_t;
+    /**************************************************************************/
+    /* Timer expired ticks                                                    */
+    /**************************************************************************/
+    ULONG tm_expires;
 
-#define TIMER_INIT(name) {LIST_HEAD_INIT((name).node), 0, NULL, NULL}
-#define INIT_TIMER(timer) do {      \
-    INIT_LIST_HEAD(&(timer)->node); \
-    (timer)->expires = 0;           \
-    (timer)->proc = NULL;           \
-    (timer)->data = NULL;           \
-} while (0)
+    /**************************************************************************/
+    /* Timer expired to call this function                                    */
+    /**************************************************************************/
+    TIMEOUT_PROC tm_proc;
 
-#define TIMER_ACTIVE(timer) LIST_INLIST(&(timer)->node)
+    /**************************************************************************/
+    /* User data passed to TIMEOUT_PROC                                       */
+    /**************************************************************************/
+    VOID *tm_data;
+} TIMER;
 
-void timer_start(timer_t *timer, int32_t ticks, timeout_t proc, void *data);
-void timer_stop(timer_t *timer);
-void tick_increase(void);
+/******************************************************************************/
+/* Macros to intialize TIMER                                                  */
+/******************************************************************************/
+#define TIMER_INIT(name) {LIST_INIT((name).tm_node), 0, NULL, NULL}
+
+STATIC INLINE VOID init_timer(TIMER *timer)
+{
+    init_list(&timer->tm_node);
+    timer->tm_expires = 0;
+    timer->tm_proc = NULL;
+    timer->tm_data = NULL;
+}
+
+/******************************************************************************/
+/* Macros to test timer is active                                             */
+/******************************************************************************/
+#define TIMER_ACTIVE(timer) lqe_in_list(&(timer)->tm_node)
+
+/**API+************************************************************************/
+
+VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data);
+VOID timer_stop(TIMER *timer);
 
 /*
  * time_after(a,b) returns true if the time a is after time b.
@@ -40,12 +75,46 @@ void tick_increase(void);
  * Do this with "<0" and ">=0" to only test the sign of the result.
  *
  */
-#define time_after(a,b)     ((int32_t)(b) - (int32_t)(a) < 0)
+#define time_after(a,b)     ((LONG)(b) - (LONG)(a) < 0)
 #define time_before(a,b)    time_after(b,a)
-#define time_after_eq(a,b)  ((int32_t)(a) - (int32_t)(b) >= 0)
+#define time_after_eq(a,b)  ((LONG)(a) - (LONG)(b) >= 0)
 #define time_before_eq(a,b) time_after_eq(b,a)
 
-#endif // _MINIOS_TIMER_H_
+/******************************************************************************/
 
-/*--------------------------------------------------------------------------*/
+STATIC INLINE LONG ms_to_ticks(LONG ms)
+{
+    LONG ticks;
+
+    if (ms <= 0)
+        return 0;
+
+    if (ms * CLOCK_HZ <= 1000) /* ms <= 1000/OS_HZ */
+        ticks = 1;
+    else
+        ticks = (ms * CLOCK_HZ) / 1000; /* ms / (1000/OS_HZ) */
+
+    return ticks;
+}
+
+STATIC INLINE LONG second_to_ticks(LONG second)
+{
+    return ms_to_ticks(1000*second);
+}
+
+STATIC INLINE LONG minute_to_ticks(LONG minute)
+{
+    return second_to_ticks(60*minute);
+}
+
+STATIC INLINE LONG hour_to_ticks(LONG hour)
+{
+    return minute_to_ticks(60*hour);
+}
+
+/**API-************************************************************************/
+
+#endif /* _MINIOS_TIMER_H_ */
+
+/******************************************************************************/
 // EOF timer.h

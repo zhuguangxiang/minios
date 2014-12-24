@@ -1,19 +1,25 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**INC+************************************************************************/
+/* Header:  s3c2440_io.h                                                      */
+/*                                                                            */
+/* Purpose: s3c2440 registers read/write                                      */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**INC-************************************************************************/
 
 #ifndef _HAL_S3C2440_IO_H_
 #define _HAL_S3C2440_IO_H_
 
-#include "os/minios_type.h"
+#include "common/types.h"
 
-#define READ_REG(addr)  *(volatile uint32_t *)(addr)
-#define WRITE_REG(addr, val) *(volatile uint32_t *)(addr) = (val)
+#define READ_REG(addr)  *(volatile ULONG *)(addr)
+#define WRITE_REG(addr, val) *(volatile ULONG *)(addr) = (val)
 
-#endif // _MINIOS_S3C2440_IO_H_
+#endif /* _HAL_S3C2440_IO_H_ */
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF s3c2440_io.h

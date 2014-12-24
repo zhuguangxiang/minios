@@ -1,7 +1,7 @@
-/**INC+************************************************************************/
-/* Header:  cpu.h                                                             */
+/**MOD+************************************************************************/
+/* Module:  memcmp.c                                                          */
 /*                                                                            */
-/* Purpose: ARM7&9 const                                                      */
+/* Purpose: memcmp implementation for MiniOS                                  */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -9,21 +9,26 @@
 /*                                                                            */
 /* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
 /*                                                                            */
-/**INC-************************************************************************/
+/**MOD-************************************************************************/
 
-#ifndef _HAL_ARM7_9_CONST_H_
-#define _HAL_ARM7_9_CONST_H_
+int memcmp(const void *dst, const void *src, int count)
+{
+    int res;
+    const char *d = dst;
+    const char *s = src;
 
-#define ARM_MODE_SVC    0x13
-#define ARM_MODE_IRQ    0x12
-#define ARM_IRQ_BIT     (1 << 7)
-#define ARM_FIQ_BIT     (1 << 6)
+    while (count-- > 0)
+    {
+        if ((res = (*d - *s)))
+        {
+            return res;
+        }
 
-#define S_FRAME_SIZE    64
-#define S_PSR           60
-#define S_PC            56
+        ++d; ++s;
+    }
 
-#endif /* _HAL_ARM7_9_CONST_H_ */
+    return 0;
+}
 
 /******************************************************************************/
-// EOF cpu_const.h
+// EOF memcmp.c

@@ -1,74 +1,145 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**MOD+************************************************************************/
+/* Module:  hsr.c                                                             */
+/*                                                                            */
+/* Purpose: High Service Routine used by interrupt                            */
+/*          MiniOS supports ISR(diable irq) and HSR(enable irq)               */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**MOD-************************************************************************/
 
-#include "os/hsr.h"
+#include "kernel/hsr.h"
+#include "kernel/task.h"
+#include "common/bug.h"
 #include "hal/port.h"
+#include "config/config.h"
 
-#if ((HSR_PRIORITY_MAX_NR <= 0) || (HSR_PRIORITY_MAX_NR > 1024))
+/******************************************************************************/
+/* Check HSR_PRIORITY_MAX_NR is valid or not                                  */
+/******************************************************************************/
+#if ((HSR_PRIORITY_MAX_NR <= 0) || (HSR_PRIORITY_MAX_NR > 32))
 #error HSR_PRIORITY_MAX_NR is out of range(1 ~ 32)
 #endif
 
-static uint32_t hsr_bitmap;
-static list_head_t hsr_array[HSR_PRIORITY_MAX_NR];
+/******************************************************************************/
+/* Bitmap of hsr_array                                                        */
+/******************************************************************************/
+STATIC ULONG hsr_bitmap;
 
-void handle_pending_hsrs(void)
+/******************************************************************************/
+/* HSR priority queue                                                         */
+/******************************************************************************/
+STATIC LQE hsr_array[HSR_PRIORITY_MAX_NR];
+
+/**PROC+***********************************************************************/
+/* Name:     handle_pending_hsrs                                              */
+/*                                                                            */
+/* Purpose:  Handle pending HSRS called by sched_unlock                       */
+/*           To call this function, sched_lock_count is coming to be 0.       */
+/*           See sched_unlock how to call it                                  */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   None                                                             */
+/*                                                                            */
+/**PROC-***********************************************************************/
+VOID handle_pending_hsrs(VOID)
 {
-    extern int32_t sched_lock;
-    int nr;
-    list_head_t *list, *node;
-    hsr_t *hsr;
+    INT nr;
+    LQE *list, *node;
+    HSR *hsr;
 
-    if (sched_lock > 0)
-        return;
-
-    // just only to prevent hisrs to schedule
-    ++sched_lock;
+    /* to prevent hsrs to schedule from interrupt */
+    ++current->lock_count;
 
     while (1) {
         nr = HAL_FIND_FIRST_SET(hsr_bitmap);
-        if (nr < 0)
-            break;
+        if (nr < 0) break;
 
         list = hsr_array + nr;
-        node = LIST_FIRST(list);
+        node = list_first(list);
         BUG_ON(NULL == node);
-        hsr = LIST_ENTRY(node, hsr_t, node);
-        hsr->function(hsr->data);
+        hsr = LIST_ENTRY(node, HSR, node);
+        hsr->func(hsr->data);
 
         HAL_DISABLE_INTERRUPTS();
         --hsr->count;
-        if (hsr->count <= 0)
-            LIST_DEL(node);
-        if (LIST_EMPTY(list))
-            hsr_bitmap &= ~(1 << nr);
+        if (hsr->count <= 0) {
+            list_del(node);
+            if (list_empty(list))
+                hsr_bitmap &= ~(1 << nr);
+        }
         HAL_ENABLE_INTERRUPTS();
     }
 
-    --sched_lock;
+    --current->lock_count;
 }
 
-void activiate_hsr(hsr_t *hsr, void *data)
+/**PROC+***********************************************************************/
+/* Name:     isr_handle_pending_hsrs                                          */
+/*                                                                            */
+/* Purpose:  Handle pending HSRS called by ISR                                */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   None                                                             */
+/*                                                                            */
+/**PROC-***********************************************************************/
+VOID isr_handle_pending_hsrs(VOID)
 {
-    BUG_ON(hsr->priority >= HSR_PRIORITY_MAX_NR);
+    BUG_ON(current->lock_count < 0);
 
-    ++hsr->count;
-    hsr->data = data;
-
-    if (!LIST_INLIST(&hsr->node)) {
-        LIST_ADD_TAIL(hsr_array + hsr->priority, &hsr->node);
-        hsr_bitmap |= (1 << hsr->priority);
+    if (current->lock_count == 0) {
+        handle_pending_hsrs();
     }
 }
 
-void init_hsr(void)
+/**PROC+***********************************************************************/
+/* Name:     activiate_hsr                                                    */
+/*                                                                            */
+/* Purpose:  activiate HSR called by ISR                                      */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   IN hsr   - HSR control block                                     */
+/*           IN data  - HSR user data                                         */
+/*                                                                            */
+/**PROC-***********************************************************************/
+VOID activiate_hsr(HSR *hsr, VOID *data)
 {
-    for (int i = 0; i < HSR_PRIORITY_MAX_NR; i++)
-        INIT_LIST_HEAD(hsr_array + i);
+    BYTE priority = hsr->priority;
+
+    BUG_ON(priority >= HSR_PRIORITY_MAX_NR);
+
+    ++hsr->count;
+
+    if (!lqe_in_list(&hsr->node)) {
+        list_add_tail(&hsr->node, hsr_array + priority);
+        hsr_bitmap |= (1 << priority);
+    }
 }
 
-/*--------------------------------------------------------------------------*/
-// EOF hisr.c
+/**PROC+***********************************************************************/
+/* Name:     mod_init_hsr                                                     */
+/*                                                                            */
+/* Purpose:  initialize HSR module                                            */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   None                                                             */
+/*                                                                            */
+/**PROC-***********************************************************************/
+STATIC VOID mod_init_hsr(VOID)
+{
+    for (INT i = 0; i < HSR_PRIORITY_MAX_NR; i++)
+        init_list(hsr_array + i);
+}
+
+MOD_INIT_CALL(mod_init_hsr, MOD_HSR_LVL);
+
+/******************************************************************************/
+// EOF hsr.c

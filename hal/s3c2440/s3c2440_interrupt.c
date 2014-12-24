@@ -1,31 +1,38 @@
-/*--------------------------------------------------------------------------*/
-/*                                  MINIOS                                  */
-/*                        The Embedded Operating System                     */
-/*             Copyright (C) 2014-2024, ZhuGuangXiang, Nanjing, China       */
-/*                           All Rights Reserved                            */
-/*--------------------------------------------------------------------------*/
+/**MOD+************************************************************************/
+/* Module:  s3c2440_interrupt.c                                               */
+/*                                                                            */
+/* Purpose: s3c2440 functions                                                 */
+/*                                                                            */
+/* Author:  ZhuGuangXiang                                                     */
+/*                                                                            */
+/* Version: V1.00                                                             */
+/*                                                                            */
+/* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
+/*                                                                            */
+/**MOD-************************************************************************/
 
 #include "hal/s3c2440/s3c2440_io.h"
 #include "hal/s3c2440/s3c2440_regs.h"
 #include "hal/s3c2440/s3c2440_interrupt.h"
+#include "common/bug.h"
 
-void s3c2440_enable_irq(int irq)
+VOID s3c2440_enable_irq(INT irq)
 {
-    uint32_t tmp = READ_REG(INTMASK);
+    ULONG tmp = READ_REG(INTMASK);
     tmp &= ~(1 << irq);
     WRITE_REG(INTMASK, tmp);
 }
 
-void s3c2440_disable_irq(int irq)
+VOID s3c2440_disable_irq(INT irq)
 {
-    uint32_t tmp = READ_REG(INTMASK);
+    ULONG tmp = READ_REG(INTMASK);
     tmp |= (1 << irq);
     WRITE_REG(INTMASK, tmp);
 }
 
-void s3c2440_clear_irq(int irq)
+VOID s3c2440_clear_irq(INT irq)
 {
-    uint32_t tmp = READ_REG(SRCPND);
+    ULONG tmp = READ_REG(SRCPND);
     tmp |= (1 << irq);
     WRITE_REG(SRCPND, tmp);
 
@@ -34,72 +41,72 @@ void s3c2440_clear_irq(int irq)
     WRITE_REG(INTPND, tmp);
 }
 
-uint32_t s3c2440_get_irq(void)
+INT s3c2440_get_irq(VOID)
 {
-    return READ_REG(INTOFFSET);
+    return (INT)READ_REG(INTOFFSET);
 }
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 
-uint32_t s3c2440_get_subirq(void)
+INT s3c2440_get_subirq(VOID)
 {
-    return READ_REG(SUBSRCPND);
+    return (INT)READ_REG(SUBSRCPND);
 }
 
-void s3c2440_enable_subirq(int subirq)
+VOID s3c2440_enable_subirq(INT subirq)
 {
-    uint32_t tmp = READ_REG(INTSUBMASK);
+    ULONG tmp = READ_REG(INTSUBMASK);
     tmp &= ~(1 << subirq);
     WRITE_REG(INTSUBMASK, tmp);
 }
 
-void s3c2440_disable_subirq(int subirq)
+VOID s3c2440_disable_subirq(INT subirq)
 {
-    uint32_t tmp = READ_REG(INTSUBMASK);
+    ULONG tmp = READ_REG(INTSUBMASK);
     tmp |= (1 << subirq);
     WRITE_REG(INTSUBMASK, tmp);
 }
 
-void s3c2440_clear_subirq(int subirq)
+VOID s3c2440_clear_subirq(INT subirq)
 {
-    uint32_t tmp = READ_REG(SUBSRCPND);
+    ULONG tmp = READ_REG(SUBSRCPND);
     tmp |= (1 << subirq);
     WRITE_REG(SUBSRCPND, tmp);
 }
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 
 typedef struct {
-    int_handle_t handler;
-    void *data;
-} int_desc_t;
+    INT_HANDLE handler;
+    VOID *data;
+} INT_DESC;
 
-static int_desc_t int_descs[INT_MAX_NR];
+STATIC INT_DESC int_descs[S3C2440_IRQS_NR];
 
-static void int_bad_handler(int irq, void *data)
+STATIC VOID int_bad_handler(INT irq, VOID *data)
 {
     BUG_ON(1);
 }
 
-static int_desc_t bad_int_desc = {
+STATIC INT_DESC bad_int_desc = {
     .handler = int_bad_handler,
     .data = NULL,
 };
 
-void platform_do_interrupt(void)
+VOID platform_do_interrupt(VOID)
 {
-    int_desc_t *desc = &bad_int_desc;
-    uint32_t irq = s3c2440_get_irq();
-    if ((irq >= 0) && (irq < INT_MAX_NR))
+    INT_DESC *desc = &bad_int_desc;
+    INT irq = s3c2440_get_irq();
+    if ((irq >= 0) && (irq < S3C2440_IRQS_NR))
         desc = int_descs + irq;
     desc->handler(irq, desc->data);
 }
 
-void register_irq(int irq, int_handle_t handler, void *data)
+VOID register_irq(INT irq, INT_HANDLE handler, VOID *data)
 {
-    int_desc_t *desc = int_descs + irq;
+    INT_DESC *desc = int_descs + irq;
 
-    if ((irq >= 0) && (irq < INT_MAX_NR)) {
+    if ((irq >= 0) && (irq < S3C2440_IRQS_NR)) {
         desc->handler = handler;
         desc->data = data;
     } else {
@@ -107,5 +114,5 @@ void register_irq(int irq, int_handle_t handler, void *data)
     }
 }
 
-/*--------------------------------------------------------------------------*/
+/******************************************************************************/
 // EOF s3c2440_interrupt.c

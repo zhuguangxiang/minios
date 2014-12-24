@@ -6,7 +6,7 @@ LD=$ARCH-ld
 AR=$ARCH-ar
 OBJDUMP=$ARCH-objdump
 OBJCOPY=$ARCH-objcopy
-C_OPT="-fno-omit-frame-pointer -O0"
+C_OPT="-fno-omit-frame-pointer -O2"
 C_DBG="-g"
 C_WARN="-Wall -Wformat -Wstrict-prototypes -Wstrict-aliasing"
 C_ARCH="-mapcs-frame -std=gnu99 -mbig-endian -march=armv4"
@@ -15,6 +15,7 @@ C_FLAGS="-c -nostdinc -fno-builtin $C_OPT $C_DBG $C_WARN $C_ARCH $C_DEF"
 
 LD_SCRIPT="hal/arm7_9/arm7_9.lds"
 TEXT_BASE="0x30000000"
+LD_FLOAT_LIB="-lgcc -L/usr/lib/gcc/arm-none-eabi/4.8.2"
 LD_FLAGS="-Bstatic -nostdlib -T $LD_SCRIPT -Ttext $TEXT_BASE"
 
 function compile()
@@ -63,20 +64,52 @@ fi
 
 # rm obj/*.o
 
-compile "os/task.c"
-compile "os/hsr.c"
-compile "os/timer.c"
-compile "os/main.c"
-ar "obj/os/*.o" "libos.a"
+compile "common/crc16.c"
+compile "common/ctype.c"
+compile "common/itoa.c"
+compile "common/vsnprintf.c"
+compile "common/memset.c"
+compile "common/memcmp.c"
+compile "common/memmove.c"
+compile "common/memcpy.c"
+compile "common/strlen.c"
+compile "common/strcmp.c"
+compile "common/strcpy.c"
+compile "common/printf.c"
+compile "common/assert.c"
+compile "common/panic.c"
+ar "obj/common/*.o" "libcommon.a"
+
+compile "kernel/task.c"
+compile "kernel/hsr.c"
+compile "kernel/wait_queue.c"
+compile "kernel/timer.c"
+ar "obj/kernel/*.o" "libkernel.a"
+
+compile "common/arm/div0.c"
+compile "common/arm/_divsi3.S"
+compile "common/arm/_modsi3.S"
+compile "common/arm/_udivsi3.S"
+compile "common/arm/_umodsi3.S"
+ar "obj/common/arm/*.o" "libarm.a"
+
+if [ -f obj/hal/arm7_9/head.o ]; then
+rm obj/hal/arm7_9/head.o
+fi
 
 compile "hal/arm7_9/context_switch.S"
 compile "hal/arm7_9/interrupt.S"
+ar "obj/hal/arm7_9/*.o" "libarm7_9.a"
 compile "hal/arm7_9/head.S"
+
 compile "hal/s3c2440/s3c2440_interrupt.c"
+compile "hal/s3c2440/s3c2440_timer.c"
+compile "hal/s3c2440/puts.c"
+ar "obj/hal/s3c2440/*.o" "libs3c2440.a"
 
 compile "app/app.c"
 
-ld "minios.elf" "obj/app/*.o" "obj/hal/arm7_9/*.o" "obj/hal/s3c2440/*.o" "-los -L."
+ld "minios.elf" "obj/app/*.o" "-larm7_9 -ls3c2440 -lcommon -lkernel -larm -ls3c2440 -L."
 dump "minios.elf" "minios.elf.dump.txt"
 bin "minios.elf" "minios.bin"
 

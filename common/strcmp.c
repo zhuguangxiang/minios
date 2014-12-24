@@ -1,7 +1,7 @@
-/**INC+************************************************************************/
-/* Header:  cpu.h                                                             */
+/**MOD+************************************************************************/
+/* Module:  strcmp.c                                                          */
 /*                                                                            */
-/* Purpose: ARM7&9 const                                                      */
+/* Purpose: strcmp implementation for MiniOS                                  */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -9,21 +9,14 @@
 /*                                                                            */
 /* (C) Copyright 2014-2024 ZhuGuangXiang NanJing China                        */
 /*                                                                            */
-/**INC-************************************************************************/
+/**MOD-************************************************************************/
 
-#ifndef _HAL_ARM7_9_CONST_H_
-#define _HAL_ARM7_9_CONST_H_
-
-#define ARM_MODE_SVC    0x13
-#define ARM_MODE_IRQ    0x12
-#define ARM_IRQ_BIT     (1 << 7)
-#define ARM_FIQ_BIT     (1 << 6)
-
-#define S_FRAME_SIZE    64
-#define S_PSR           60
-#define S_PC            56
-
-#endif /* _HAL_ARM7_9_CONST_H_ */
+int strcmp(const char *s1, const char *s2)
+{
+    while (*s1 && *s1 == *s2)
+        s1++, s2++;
+    return (*s1 - *s2);
+}
 
 /******************************************************************************/
-// EOF cpu_const.h
+// EOF strcmp.c

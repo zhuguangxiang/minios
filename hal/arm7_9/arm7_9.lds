@@ -33,21 +33,6 @@ SECTIONS
         PROVIDE(__dtors_end__ = .);
     }
 
-    .dev_init :
-    {
-        __dev_init_start = .;
-        *(.initcall0.init)
-        *(.initcall1.init)
-        *(.initcall2.init)
-        *(.initcall3.init)
-        *(.initcall4.init)
-        *(.initcall5.init)
-        *(.initcall6.init)
-        *(.initcall7.init)
-        *(.initcall8.init)
-        __dev_init_end = .;
-    }
-
     . = ALIGN(4);
 
     .rodata :
@@ -69,10 +54,31 @@ SECTIONS
 
     . = ALIGN(4);
 
+    .mod_tbl :
+    {
+        __MOD_TBL_START__ = .;
+        *(.mod_init_lvl_0.init)
+        *(.mod_init_lvl_1.init)
+        *(.mod_init_lvl_2.init)
+        *(.mod_init_lvl_3.init)
+        *(.mod_init_lvl_4.init)
+        *(.mod_init_lvl_5.init)
+        *(.mod_init_lvl_6.init)
+        *(.mod_init_lvl_7.init)
+        *(.mod_init_lvl_8.init)
+        *(.mod_init_lvl_9.init)
+        *(.mod_init_lvl_10.init)
+        __MOD_TBL_END__ = .;
+    }
+
     .dev_tbl :
     {
         __DEV_TBL_START__ = .;
-        *(.dev_tbl)
+        *(.dev_tbl_lvl_0)
+        *(.dev_tbl_lvl_1)
+        *(.dev_tbl_lvl_2)
+        *(.dev_tbl_lvl_3)
+        *(.dev_tbl_lvl_4)
         __DEV_TBL_END__ = .;
     }
 
