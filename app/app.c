@@ -121,6 +121,8 @@ void app_start(void)
 
 	task_create((TASK *)&test_task_3, &task_para, 1);
 
+	app_test_mutex();
+
 }
 
 /*--------------------------------------------------------------------------*/

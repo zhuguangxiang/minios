@@ -22,7 +22,7 @@
 /******************************************************************************/
 #define BUG_ON(condition) do {                  \
     if (condition) {                            \
-        printf("BUG: failure at %s:%d/%s()!\n", \
+        printf("BUG: failure at %s:%d:%s()!\n", \
             __FILE__, __LINE__, __FUNCTION__);  \
         panic("BUG!");                          \
     }                                           \

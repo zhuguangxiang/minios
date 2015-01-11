@@ -20,8 +20,8 @@
 /* External functions & variables                                             */
 /******************************************************************************/
 VOID task_time_slice_proc(VOID);
-VOID task_lock(VOID);
-VOID task_unlock(VOID);
+VOID sched_lock(VOID);
+VOID sched_unlock(VOID);
 
 /******************************************************************************/
 /* Local variables                                                            */
@@ -132,7 +132,7 @@ VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data)
     timer->tm_data = data;
     timer->tm_expires = jiffies + ticks;
 
-    task_lock();
+    sched_lock();
 
     LIST_FOR_EACH(pos, &timer_active_list) {
         t = LIST_ENTRY(pos, TIMER, tm_node);
@@ -142,7 +142,7 @@ VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data)
 
     __list_add(&timer->tm_node, pos->prev, pos);
 
-    task_unlock();
+    sched_unlock();
 }
 
 /**PROC+***********************************************************************/
@@ -157,12 +157,12 @@ VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data)
 /**PROC-***********************************************************************/
 VOID timer_stop(TIMER *timer)
 {
-    task_lock();
+    sched_lock();
 
     if (lqe_in_list(&timer->tm_node))
         list_del(&timer->tm_node);
 
-    task_unlock();
+    sched_unlock();
 }
 
 /******************************************************************************/

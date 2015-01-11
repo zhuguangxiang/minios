@@ -13,7 +13,6 @@
 /**MOD-************************************************************************/
 
 #include "kernel/hsr.h"
-#include "kernel/task.h"
 #include "common/bug.h"
 #include "hal/port.h"
 #include "config/config.h"
@@ -53,9 +52,6 @@ VOID handle_pending_hsrs(VOID)
     LQE *list, *node;
     HSR *hsr;
 
-    /* to prevent hsrs to schedule from interrupt */
-    ++current->lock_count;
-
     while (1) {
         nr = HAL_FIND_FIRST_SET(hsr_bitmap);
         if (nr < 0) break;
@@ -75,8 +71,6 @@ VOID handle_pending_hsrs(VOID)
         }
         HAL_ENABLE_INTERRUPTS();
     }
-
-    --current->lock_count;
 }
 
 /**PROC+***********************************************************************/
@@ -94,7 +88,9 @@ VOID isr_handle_pending_hsrs(VOID)
     BUG_ON(current->lock_count < 0);
 
     if (current->lock_count == 0) {
+        ++current->lock_count;
         handle_pending_hsrs();
+        --current->lock_count;
     }
 }
 

@@ -35,21 +35,29 @@ typedef struct wait_queue {
     LQE wq_list;
 
     /**************************************************************************/
+    /* count of WAIT_NODEs in wq_list                                         */
+    /**************************************************************************/
+    SHORT wq_count;
+
+    /**************************************************************************/
     /* one of WQ_TYPE_(FIFO, PRIO)                                            */
     /**************************************************************************/
-    INT wq_type;
+    SHORT wq_type;
 } WAIT_QUEUE;
 
 /******************************************************************************/
 /* Macros to intialize wait queue                                             */
 /******************************************************************************/
-#define WAIT_QUEUE_INIT(wq, type) {LIST_INIT((wq).wq_list), type}
+#define WAIT_QUEUE_INIT(wq, type) {LIST_INIT((wq).wq_list), 0, type}
 
 STATIC INLINE VOID init_wait_queue(WAIT_QUEUE *wq, INT type)
 {
     init_list(&wq->wq_list);
+    wq->wq_count = 0;
     wq->wq_type = type;
 }
+
+#define WAIT_QUEUE_COUNT(wq) ((wq)->wq_count)
 
 /**API+************************************************************************/
 

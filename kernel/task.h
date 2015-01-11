@@ -33,8 +33,9 @@
 /* If TICK_SCHED is set, the task is scheduled by tick clock.                 */
 /* If URGENT is set, the task is firstly scheduled with the same priority.    */
 /******************************************************************************/
-#define TASK_FLAGS_TICK_SCHED    (1 << 0)
-#define TASK_FLAGS_URGENT        (1 << 1)
+#define TASK_FLAGS_TICK_SCHED          (1 << 0)
+#define TASK_FLAGS_URGENT              (1 << 1)
+#define TASK_FLAGS_PRIORITY_INHERITED  (1 << 2)
 
 /**STRUCT+*********************************************************************/
 /* Structure: TASK                                                            */
@@ -60,19 +61,9 @@ typedef struct task {
     ULONG stack_size;
 
     /**************************************************************************/
-    /* Task lock count                                                        */
-    /**************************************************************************/
-    INT lock_count;
-
-    /**************************************************************************/
     /* Task state, one of TASK_STATE_(RUNNING, SUSPEND, ZOMBIE)               */
     /**************************************************************************/
     BYTE state;
-
-    /**************************************************************************/
-    /* Task flags, one of TASK_STATE_(TICK_SCHED, URGENT, AUTO_START)         */
-    /**************************************************************************/
-    BYTE flags;
 
     /**************************************************************************/
     /* Task priority                                                          */
@@ -83,6 +74,27 @@ typedef struct task {
     /* Task default priority                                                  */
     /**************************************************************************/
     BYTE default_priority;
+
+    /**************************************************************************/
+    /* Task flags, one of TASK_FLAGS_(TICK_SCHED, URGENT)                     */
+    /**************************************************************************/
+    BYTE flags;
+
+    /**************************************************************************/
+    /* How many mutexes have been locked. When all mutexes are unlocked, task */
+    /* is restored to its original priority.                                  */
+    /**************************************************************************/
+    CHAR mutex_count;
+
+    /**************************************************************************/
+    /* Original priority, used for mutex                                      */
+    /**************************************************************************/
+    BYTE original_priority;
+
+    /**************************************************************************/
+    /* Scheduler lock count                                                   */
+    /**************************************************************************/
+    SHORT lock_count;
 
     /**************************************************************************/
     /* Task time slice schedule value                                         */
@@ -150,8 +162,6 @@ typedef struct {
 /******************************************************************************/
 extern TASK *current;
 
-/**API+************************************************************************/
-
 VOID task_lock(VOID);
 VOID task_unlock(VOID);
 
@@ -162,6 +172,9 @@ VOID task_resume(TASK *task);
 VOID task_yield(VOID);
 VOID task_sleep(INT ticks);
 VOID task_exit(VOID);
+
+VOID sched_lock(VOID);
+VOID sched_unlock(VOID);
 
 STATIC INLINE ULONG task_get_stack_base(TASK *task)
 {
@@ -181,7 +194,8 @@ VOID task_stack_check(TASK *to);
 ULONG task_measure_stack_usage(TASK *task);
 #endif
 
-/**API-************************************************************************/
+VOID task_set_inherit_priority(BYTE priority, TASK *task);
+VOID task_clear_inherit_priority(TASK *task);
 
 #endif /* _MINIOS_TASK_H_ */
 

@@ -114,15 +114,14 @@ typedef struct {
 /*                                                                            */
 /* Params:   IN task  - task control block                                    */
 /*           IN rq    - running queue                                         */
-/*           IN first - flag of adding to list head or tail                   */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATIC VOID rq_task_add(TASK *task, RUN_QUEUE *rq, BOOL first)
+STATIC VOID rq_task_add(TASK *task, RUN_QUEUE *rq)
 {
     BYTE priority = task->priority;
     LQE *list = rq->queue_array + priority;
 
-    if (TRUE == first)
+    if (task->flags & TASK_FLAGS_URGENT)
         list_add(&task->run_node, list);
     else
         list_add_tail(&task->run_node, list);
@@ -285,7 +284,7 @@ STATIC VOID switch_to(TASK *to)
 }
 
 /**PROC+***********************************************************************/
-/* Name:     task_lock                                                        */
+/* Name:     sched_lock                                                       */
 /*                                                                            */
 /* Purpose:  Forbidden scheduler                                              */
 /*                                                                            */
@@ -294,7 +293,7 @@ STATIC VOID switch_to(TASK *to)
 /* Params:   None                                                             */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID task_lock(VOID)
+VOID sched_lock(VOID)
 {
     if (NULL == current)
         return;
@@ -303,7 +302,7 @@ VOID task_lock(VOID)
 }
 
 /**PROC+***********************************************************************/
-/* Name:     task_unlock                                                      */
+/* Name:     sched_unlock                                                     */
 /*                                                                            */
 /* Purpose:  Try to enable scheduler                                          */
 /*                                                                            */
@@ -312,7 +311,7 @@ VOID task_lock(VOID)
 /* Params:   None                                                             */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID task_unlock(VOID)
+VOID sched_unlock(VOID)
 {
     INT lock;
     TASK *to;
@@ -335,6 +334,43 @@ VOID task_unlock(VOID)
     } else {
         current->lock_count = lock;
     }
+}
+
+VOID task_set_inherit_priority(BYTE priority, TASK *task)
+{
+    sched_lock();
+
+    BUG_ON(task->mutex_count <= 0);
+
+    if (priority < task->priority) {
+        if (!(task->flags & TASK_FLAGS_PRIORITY_INHERITED))
+            task->original_priority = task->priority;
+        task->flags |= TASK_FLAGS_PRIORITY_INHERITED;
+        rq_task_del(task, &running_q);
+        task->priority = priority;
+        rq_task_add(task, &running_q);
+    }
+
+    sched_unlock();
+}
+
+VOID task_clear_inherit_priority(TASK *task)
+{
+    sched_lock();
+
+    BUG_ON(task->mutex_count < 0);
+
+    if ((0 == task->mutex_count) &&
+        (task->flags & TASK_FLAGS_PRIORITY_INHERITED)) {
+        task->flags &= ~TASK_FLAGS_PRIORITY_INHERITED;
+        if (task->priority < task->original_priority) {
+            rq_task_del(task, &running_q);
+            task->priority = task->original_priority;
+            rq_task_add(task, &running_q);
+        }
+    }
+
+    sched_unlock();
 }
 
 #ifdef TASK_STACK_CHECK
@@ -539,7 +575,7 @@ VOID task_suspend(TASK *task, LONG ticks, CLEANUP cleanup, VOID *info)
     if (task->state != TASK_STATE_RUNNING)
         return;
 
-    task_lock();
+    sched_lock();
 
     handle_pending_hsrs();
 
@@ -559,7 +595,7 @@ VOID task_suspend(TASK *task, LONG ticks, CLEANUP cleanup, VOID *info)
     switch_to(to);
     HAL_ENABLE_INTERRUPTS();
 
-    task_unlock();
+    sched_unlock();
 }
 
 /**PROC+***********************************************************************/
@@ -577,7 +613,7 @@ VOID task_resume(TASK *task)
     if (task->state != TASK_STATE_SUSPEND)
         return;
 
-    task_lock();
+    sched_lock();
 
     if (TIMER_ACTIVE(&task->timer))
         timer_stop(&task->timer);
@@ -585,9 +621,9 @@ VOID task_resume(TASK *task)
     task->cleanup = NULL;
     task->cleanup_info = NULL;
     task->state = TASK_STATE_RUNNING;
-    rq_task_add(task, &running_q, task->flags & TASK_FLAGS_URGENT);
+    rq_task_add(task, &running_q);
 
-    task_unlock();
+    sched_unlock();
 }
 
 /**PROC+***********************************************************************/
@@ -602,14 +638,14 @@ VOID task_resume(TASK *task)
 /**PROC-***********************************************************************/
 VOID task_yield(VOID)
 {
-    task_lock();
+    sched_lock();
 
     if (current->flags & TASK_FLAGS_TICK_SCHED)
         current->time_slice = TICK_SCHED_QUANTUM;
 
     rq_task_mov_tail(current, &running_q);
 
-    task_unlock();
+    sched_unlock();
 }
 
 /**PROC+***********************************************************************/
@@ -676,6 +712,9 @@ VOID task_time_slice_proc(VOID)
 
     BUG_ON(NULL == current);
 
+    if (task->mutex_count > 0)
+        return;
+
     if ((task->flags & TASK_FLAGS_TICK_SCHED) && (--task->time_slice <= 0)) {
 
         if (task->default_priority == SCHED_PRIORITY_MAX_NR - 1) {
@@ -693,7 +732,7 @@ VOID task_time_slice_proc(VOID)
             task->time_slice = TICK_SCHED_QUANTUM +
             (task->priority - task->default_priority) * TICK_SCHED_QUANTUM / 2;
         }
-        rq_task_add(task, rq, task->flags & TASK_FLAGS_URGENT);
+        rq_task_add(task, rq);
     }
 }
 

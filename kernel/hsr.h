@@ -15,8 +15,7 @@
 #ifndef _MINIOS_HSR_H_
 #define _MINIOS_HSR_H_
 
-#include "common/types.h"
-#include "common/list.h"
+#include "kernel/task.h"
 
 /**STRUCT+*********************************************************************/
 /* Structure: HSR                                                             */
@@ -62,12 +61,18 @@ typedef struct {
 #define HSR_INIT(name, prio, func, desc) \
     {LIST_INIT((name).node), func, NULL, 0, prio, desc}
 
-/**API+************************************************************************/
-
 VOID handle_pending_hsrs(VOID);
 VOID activiate_hsr(HSR *hsr, VOID *data);
 
-/**API-************************************************************************/
+STATIC INLINE VOID hsr_lock(VOID)
+{
+    sched_lock();
+}
+
+STATIC INLINE VOID hsr_unlock(VOID)
+{
+    sched_unlock();
+}
 
 #endif /* _MINIOS_HSR_H_ */
 

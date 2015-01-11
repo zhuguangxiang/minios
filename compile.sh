@@ -6,7 +6,7 @@ LD=$ARCH-ld
 AR=$ARCH-ar
 OBJDUMP=$ARCH-objdump
 OBJCOPY=$ARCH-objcopy
-C_OPT="-fno-omit-frame-pointer -O2"
+C_OPT="-fno-omit-frame-pointer -O0"
 C_DBG="-g"
 C_WARN="-Wall -Wformat -Wstrict-prototypes -Wstrict-aliasing"
 C_ARCH="-mapcs-frame -std=gnu99 -mbig-endian -march=armv4"
@@ -84,6 +84,7 @@ compile "kernel/task.c"
 compile "kernel/hsr.c"
 compile "kernel/wait_queue.c"
 compile "kernel/timer.c"
+compile "kernel/mutex.c"
 ar "obj/kernel/*.o" "libkernel.a"
 
 compile "common/arm/div0.c"
@@ -108,6 +109,7 @@ compile "hal/s3c2440/puts.c"
 ar "obj/hal/s3c2440/*.o" "libs3c2440.a"
 
 compile "app/app.c"
+compile "app/test_mutex.c"
 
 ld "minios.elf" "obj/app/*.o" "-larm7_9 -ls3c2440 -lcommon -lkernel -larm -ls3c2440 -L."
 dump "minios.elf" "minios.elf.dump.txt"

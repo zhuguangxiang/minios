@@ -5,6 +5,8 @@
 *.elf
 *.elf.*
 *.bin
+*.txt
+.clang*
 
 # Precompiled Headers
 *.gch

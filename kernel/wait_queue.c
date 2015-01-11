@@ -28,6 +28,11 @@ typedef struct wait_node {
     LQE wn_node;
 
     /**************************************************************************/
+    /* Pointer to WAIT_QUEUE                                                  */
+    /**************************************************************************/
+    WAIT_QUEUE *wn_wq;
+
+    /**************************************************************************/
     /* Task waiting on WAIT_QUEUE                                             */
     /**************************************************************************/
     TASK *wn_task;
@@ -47,7 +52,7 @@ typedef struct wait_node {
 /* Macros to intialize wait node                                              */
 /******************************************************************************/
 #define WAIT_NODE_INIT(wn, data) \
-    {LIST_INIT((wn).wn_node), current, ENOERR, data}
+    {LIST_INIT((wn).wn_node), NULL, current, ENOERR, data}
 
 /**PROC+***********************************************************************/
 /* Name:     add_wait_queue                                                   */
@@ -80,6 +85,8 @@ STATIC VOID add_wait_queue(WAIT_QUEUE *wq, WAIT_NODE *wn)
         }
     }
 
+    ++wq->wq_count;
+    wn->wn_wq = wq;
     __list_add(&wn->wn_node, pos->prev, pos);
 }
 
@@ -97,6 +104,7 @@ STATIC INLINE VOID remove_wait_queue(WAIT_NODE *wn)
 {
     BUG_ON(FALSE == lqe_in_list(&wn->wn_node));
     list_del(&wn->wn_node);
+    --wn->wn_wq->wq_count;
 }
 
 /**PROC+***********************************************************************/
@@ -134,10 +142,10 @@ INT sleep_on(WAIT_QUEUE *wq, LONG ticks, VOID *data)
 {
     WAIT_NODE wn = WAIT_NODE_INIT(wn, data);
 
-    task_lock();
+    sched_lock();
     add_wait_queue(wq, &wn);
     task_suspend(current, ticks, wq_timeout_proc, &wn);
-    task_unlock();
+    sched_unlock();
 
     return wn.wn_status;
 }
@@ -159,7 +167,7 @@ VOID wake_up(WAIT_QUEUE *wq, INT nr, WAKEUP_FUNC func, VOID *data)
 {
     WAIT_NODE *wn, *nxt;
 
-    task_lock();
+    sched_lock();
 
     LIST_FOR_EACH_ENTRY_SAFE(wn, nxt, &wq->wq_list, wn_node) {
 
@@ -174,7 +182,7 @@ VOID wake_up(WAIT_QUEUE *wq, INT nr, WAKEUP_FUNC func, VOID *data)
             break;
     }
 
-    task_unlock();
+    sched_unlock();
 }
 
 /******************************************************************************/
