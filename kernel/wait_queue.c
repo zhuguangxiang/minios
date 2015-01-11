@@ -186,4 +186,3 @@ VOID wake_up(WAIT_QUEUE *wq, INT nr, WAKEUP_FUNC func, VOID *data)
 }
 
 /******************************************************************************/
-// EOF wait_queue.c

@@ -64,8 +64,6 @@ STATIC INLINE VOID init_timer(TIMER *timer)
 /******************************************************************************/
 #define TIMER_ACTIVE(timer) lqe_in_list(&(timer)->tm_node)
 
-/**API+************************************************************************/
-
 VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data);
 VOID timer_stop(TIMER *timer);
 
@@ -112,9 +110,6 @@ STATIC INLINE LONG hour_to_ticks(LONG hour)
     return minute_to_ticks(60*hour);
 }
 
-/**API-************************************************************************/
-
 #endif /* _MINIOS_TIMER_H_ */
 
 /******************************************************************************/
-// EOF timer.h

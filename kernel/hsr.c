@@ -138,4 +138,3 @@ STATIC VOID mod_init_hsr(VOID)
 MOD_INIT_CALL(mod_init_hsr, MOD_HSR_LVL);
 
 /******************************************************************************/
-// EOF hsr.c

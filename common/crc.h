@@ -20,4 +20,3 @@ unsigned short crc16(unsigned char *s, int len);
 #endif /* _MINIOS_CRC_H_ */
 
 /******************************************************************************/
-// EOF crc.h

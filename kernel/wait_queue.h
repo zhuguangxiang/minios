@@ -59,8 +59,6 @@ STATIC INLINE VOID init_wait_queue(WAIT_QUEUE *wq, INT type)
 
 #define WAIT_QUEUE_COUNT(wq) ((wq)->wq_count)
 
-/**API+************************************************************************/
-
 /******************************************************************************/
 /* if return value is not 0, wake_up_all will stop handle next wait node      */
 /* data1 - passed to sleep_on                                                 */
@@ -81,9 +79,6 @@ STATIC INLINE VOID wake_up_all(WAIT_QUEUE *wq, WAKEUP_FUNC func, VOID *data)
      wake_up(wq, -1, func, data);
 }
 
-/**API-************************************************************************/
-
 #endif /* _MINIOS_WAIT_QUEUE_H_ */
 
 /******************************************************************************/
-// EOF wait_queue.h

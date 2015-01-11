@@ -87,4 +87,3 @@ VOID mutex_unlock(MUTEX *mutex);
 #endif /* _MINIOS_MUTEX_H_ */
 
 /******************************************************************************/
-// EOF mutex.h

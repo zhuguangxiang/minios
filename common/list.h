@@ -467,4 +467,3 @@ STATIC INLINE VOID hlist_del(HNODE *hnode)
 #endif /* _MINIOS_LIST_H_ */
 
 /******************************************************************************/
-// EOF list.h

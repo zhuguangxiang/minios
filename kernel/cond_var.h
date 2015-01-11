@@ -29,6 +29,10 @@ typedef struct {
     /**************************************************************************/
     /* Queue of waiting tasks                                                 */
     /**************************************************************************/
+    MUTEX *cv_mutex;
+    /**************************************************************************/
+    /* Queue of waiting tasks                                                 */
+    /**************************************************************************/
     WAIT_QUEUE cv_queue;
 } COND_VAR;
 
@@ -40,14 +44,10 @@ STATIC INLINE VOID init_cond(COND_VAR *cond)
     init_wait_queue(&cond->cv_queue);
 }
 
-/**API+************************************************************************/
-
 STATUS cond_wait(COND_VAR *cond, MUTEX *mutex, TICK_COUNT timeout);
 VOID cond_signal(COND_VAR *cond);
 VOID cond_broadcast(COND_VAR *cond);
 
-/**API-************************************************************************/
 #endif /* _MINIOS_COND_VAR_H_ */
 
 /******************************************************************************/
-// EOF cond_var.h

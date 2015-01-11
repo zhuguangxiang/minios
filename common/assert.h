@@ -17,7 +17,11 @@
 #ifdef NDEBUG
 #define assert(e)   ((void)0)
 #else
-void __assert_fail(const char *expr, const char *file, int line);
+static inline void __assert_fail(const char *expr, const char *file, int line)
+{
+    printf("Assertion failed: \'%s\', file:%s, line:%d.\n\r", exp, file, line);
+    panic(0);
+}
 #define assert(exp) \
   ((void)((exp) || (__assert_fail(#exp, __FILE__, __LINE__),0)))
 #endif
@@ -25,4 +29,3 @@ void __assert_fail(const char *expr, const char *file, int line);
 #endif /* _MINIOS_ASSERT_H_ */
 
 /******************************************************************************/
-// EOF assert.h

@@ -39,4 +39,3 @@ VOID register_irq(INT irq, INT_HANDLE handler, VOID *data);
 #endif /* _HAL_S3C2440_INTERRUPT_H_ */
 
 /******************************************************************************/
-// EOF s3c2440_interrupt.h

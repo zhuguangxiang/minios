@@ -30,4 +30,3 @@ int strtol(const char *cp, char **endp, unsigned int base);
 #endif /* _MINIOS_STRING_H_ */
 
 /******************************************************************************/
-// EOF string.h

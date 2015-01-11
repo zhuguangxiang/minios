@@ -17,19 +17,20 @@
 /******************************************************************************/
 /* Common Types                                                               */
 /******************************************************************************/
-typedef unsigned char    BYTE;       /* 8 bits                                */
-typedef          char    CHAR;       /*                                       */
-typedef unsigned short   USHORT;     /* 2 byte unsigned integer               */
-typedef          short   SHORT;      /* 2 byte signed integer                 */
-typedef unsigned long    ULONG;      /* 4 byte unsigned integer               */
-typedef          long    LONG;       /* 4 byte signed integer                 */
+typedef unsigned char    UINT8;      /* 8 bits                                */
+typedef signed   char    INT8;       /* 8 bits signed integer                 */
+typedef unsigned short   UINT16;     /* 2 byte unsigned integer               */
+typedef signed   short   INT16;      /* 2 byte signed integer                 */
+typedef unsigned long    UINT32;     /* 4 byte unsigned integer               */
+typedef signed   long    INT32;      /* 4 byte signed integer                 */
 typedef unsigned int     UINT;       /* >= 2 byte unsigned integer            */
-                                     /* (machine word)                        */
-typedef          int     INT;        /* >= 2 byte signed integer              */
-                                     /* (machine word)                        */
-typedef          int     BOOL;       /* boolean                               */
-typedef          void    VOID;       /* void if support, char otherwise       */
+typedef signed   int     INT;        /* >= 2 byte signed integer              */
+typedef signed   int     BOOL;       /* boolean                               */
 
+/******************************************************************************/
+/* Redefine some internal keywords for c programming style                    */
+/******************************************************************************/
+#define VOID   void
 #define CONST  const
 #define INLINE inline
 #define STATIC static
@@ -57,6 +58,7 @@ typedef ULONG    CPU_FLAGS;
 typedef INT      STATUS;
 typedef ULONG    HANDLE;
 typedef ULONG    ADDRESS;
+typedef INT      TICK_COUNT;
 
 /******************************************************************************/
 /* MIN()/MAX() Macros                                                         */
@@ -110,4 +112,3 @@ typedef VOID (*INIT_CALL)(VOID);
 #endif /* _MINIOS_TYPES_H_ */
 
 /******************************************************************************/
-// EOF types.h

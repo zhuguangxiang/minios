@@ -28,4 +28,3 @@ INT snprintf(CHAR *buf, INT size, CONST CHAR *fmt, ...);
 #endif /* _MINIOS_STDIO_H_ */
 
 /******************************************************************************/
-// EOF stdio.h

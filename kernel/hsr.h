@@ -77,4 +77,3 @@ STATIC INLINE VOID hsr_unlock(VOID)
 #endif /* _MINIOS_HSR_H_ */
 
 /******************************************************************************/
-// EOF hsr.h

@@ -67,4 +67,3 @@ static inline unsigned char __toupper(unsigned char c)
 #endif /* _MINIOS_CTYPE_H_ */
 
 /******************************************************************************/
-// EOF ctype.h

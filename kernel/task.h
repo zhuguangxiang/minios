@@ -200,4 +200,3 @@ VOID task_clear_inherit_priority(TASK *task);
 #endif /* _MINIOS_TASK_H_ */
 
 /******************************************************************************/
-// EOF task.h

@@ -673,4 +673,3 @@ INT snprintf(CHAR *buf, INT size, CONST CHAR *fmt, ...)
 }
 
 /******************************************************************************/
-// EOF vsnprintf.c

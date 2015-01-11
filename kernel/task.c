@@ -336,6 +336,17 @@ VOID sched_unlock(VOID)
     }
 }
 
+/**PROC+***********************************************************************/
+/* Name:     task_set_inherit_priority                                        */
+/*                                                                            */
+/* Purpose:  inherit priority for mutex                                       */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   IN priority - higher priority                                    */
+/*           IN task     - task control block                                 */
+/*                                                                            */
+/**PROC-***********************************************************************/
 VOID task_set_inherit_priority(BYTE priority, TASK *task)
 {
     sched_lock();
@@ -354,6 +365,16 @@ VOID task_set_inherit_priority(BYTE priority, TASK *task)
     sched_unlock();
 }
 
+/**PROC+***********************************************************************/
+/* Name:     task_clear_inherit_priority                                      */
+/*                                                                            */
+/* Purpose:  Restore task's original priority when unlock mutex               */
+/*                                                                            */
+/* Returns:  None                                                             */
+/*                                                                            */
+/* Params:   IN task     - task control block                                 */
+/*                                                                            */
+/**PROC-***********************************************************************/
 VOID task_clear_inherit_priority(TASK *task)
 {
     sched_lock();
@@ -874,4 +895,3 @@ VOID os_start(VOID)
 }
 
 /******************************************************************************/
-// EOF task.c

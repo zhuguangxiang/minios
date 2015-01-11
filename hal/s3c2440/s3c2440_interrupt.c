@@ -115,4 +115,3 @@ VOID register_irq(INT irq, INT_HANDLE handler, VOID *data)
 }
 
 /******************************************************************************/
-// EOF s3c2440_interrupt.c

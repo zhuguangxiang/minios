@@ -30,4 +30,3 @@ void *memmove(void *dst, const void *src, int count)
 }
 
 /******************************************************************************/
-// EOF memmove.c

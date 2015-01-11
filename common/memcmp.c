@@ -31,4 +31,3 @@ int memcmp(const void *dst, const void *src, int count)
 }
 
 /******************************************************************************/
-// EOF memcmp.c
