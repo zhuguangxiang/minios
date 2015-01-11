@@ -33,7 +33,7 @@ typedef struct timer {
     /**************************************************************************/
     /* Timer expired ticks                                                    */
     /**************************************************************************/
-    ULONG tm_expires;
+    UINT32 tm_expires;
 
     /**************************************************************************/
     /* Timer expired to call this function                                    */
@@ -64,7 +64,7 @@ STATIC INLINE VOID init_timer(TIMER *timer)
 /******************************************************************************/
 #define TIMER_ACTIVE(timer) lqe_in_list(&(timer)->tm_node)
 
-VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data);
+VOID timer_start(TIMER *timer, TICK_COUNT ticks, TIMEOUT_PROC proc, VOID *data);
 VOID timer_stop(TIMER *timer);
 
 /*
@@ -73,16 +73,16 @@ VOID timer_stop(TIMER *timer);
  * Do this with "<0" and ">=0" to only test the sign of the result.
  *
  */
-#define time_after(a,b)     ((LONG)(b) - (LONG)(a) < 0)
+#define time_after(a,b)     ((INT32)(b) - (INT32)(a) < 0)
 #define time_before(a,b)    time_after(b,a)
-#define time_after_eq(a,b)  ((LONG)(a) - (LONG)(b) >= 0)
+#define time_after_eq(a,b)  ((INT32)(a) - (INT32)(b) >= 0)
 #define time_before_eq(a,b) time_after_eq(b,a)
 
 /******************************************************************************/
 
-STATIC INLINE LONG ms_to_ticks(LONG ms)
+STATIC INLINE INT32 ms_to_ticks(INT32 ms)
 {
-    LONG ticks;
+    INT32 ticks;
 
     if (ms <= 0)
         return 0;
@@ -95,17 +95,17 @@ STATIC INLINE LONG ms_to_ticks(LONG ms)
     return ticks;
 }
 
-STATIC INLINE LONG second_to_ticks(LONG second)
+STATIC INLINE INT32 second_to_ticks(INT32 second)
 {
     return ms_to_ticks(1000*second);
 }
 
-STATIC INLINE LONG minute_to_ticks(LONG minute)
+STATIC INLINE INT32 minute_to_ticks(INT32 minute)
 {
     return second_to_ticks(60*minute);
 }
 
-STATIC INLINE LONG hour_to_ticks(LONG hour)
+STATIC INLINE INT32 hour_to_ticks(INT32 hour)
 {
     return minute_to_ticks(60*hour);
 }

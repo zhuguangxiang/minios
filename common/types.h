@@ -19,6 +19,7 @@
 /******************************************************************************/
 typedef unsigned char    UINT8;      /* 8 bits                                */
 typedef signed   char    INT8;       /* 8 bits signed integer                 */
+typedef          char    CHAR;       /* char of string                        */
 typedef unsigned short   UINT16;     /* 2 byte unsigned integer               */
 typedef signed   short   INT16;      /* 2 byte signed integer                 */
 typedef unsigned long    UINT32;     /* 4 byte unsigned integer               */
@@ -54,10 +55,10 @@ typedef signed   int     BOOL;       /* boolean                               */
 /******************************************************************************/
 /* Kernel Types                                                               */
 /******************************************************************************/
-typedef ULONG    CPU_FLAGS;
+typedef UINT32   CPU_FLAGS;
 typedef INT      STATUS;
-typedef ULONG    HANDLE;
-typedef ULONG    ADDRESS;
+typedef UINT32   HANDLE;
+typedef UINT32   ADDRESS;
 typedef INT      TICK_COUNT;
 
 /******************************************************************************/
@@ -106,8 +107,8 @@ typedef VOID (*INIT_CALL)(VOID);
 /* ROUND/BITS_TO_BYTES Macros                                                 */
 /******************************************************************************/
 #define DIV_ROUND_UP(n,d)    (((n) + (d) - 1) / (d))
-#define BITS_TO_BYTES(nr)    DIV_ROUND_UP(nr, 8)
-#define BITS_TO_ULONG(nr)    DIV_ROUND_UP(nr, 32)
+#define BITS_TO_UINT8(nr)    DIV_ROUND_UP(nr, 8)
+#define BITS_TO_UINT32(nr)   DIV_ROUND_UP(nr, 32)
 
 #endif /* _MINIOS_TYPES_H_ */
 

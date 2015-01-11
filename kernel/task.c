@@ -30,14 +30,14 @@
 /**STRUCT-*********************************************************************/
 typedef struct {
     /**************************************************************************/
-    /* Bitmap group, each bit represents ULONG(4 bytes)                       */
+    /* Bitmap group, each bit represents UINT32(4 bytes)                       */
     /**************************************************************************/
-    ULONG group;
+    UINT32 group;
 
     /**************************************************************************/
     /* Bitmap array, each bit represents a priority                           */
     /**************************************************************************/
-    ULONG array[BITS_TO_ULONG(SCHED_PRIORITY_MAX_NR)];
+    UINT32 array[BITS_TO_UINT32(SCHED_PRIORITY_MAX_NR)];
 } SCHED_BITMAP;
 
 /**PROC+***********************************************************************/
@@ -75,7 +75,7 @@ STATIC INLINE VOID sched_bitmap_clear(INT num, SCHED_BITMAP *map)
 {
     INT group_nr = num >> 5;
     INT bitmap_nr = num & 0x1f;
-    ULONG val = map->array[group_nr] & (~(1 << bitmap_nr));
+    UINT32 val = map->array[group_nr] & (~(1 << bitmap_nr));
 
     if (0 == val)
         map->group &= ~(1 << group_nr);
@@ -91,8 +91,8 @@ typedef struct {
     /**************************************************************************/
     /* queue_priority is the highest priority of tasks in queue_array         */
     /**************************************************************************/
-    BYTE queue_priority;
-    BYTE queue_reserved[3];
+    UINT8 queue_priority;
+    UINT8 queue_reserved[3];
 
     /**************************************************************************/
     /* queue_map is a bitmap of priorities of tasks in queue_array            */
@@ -118,7 +118,7 @@ typedef struct {
 /**PROC-***********************************************************************/
 STATIC VOID rq_task_add(TASK *task, RUN_QUEUE *rq)
 {
-    BYTE priority = task->priority;
+    UINT8 priority = task->priority;
     LQE *list = rq->queue_array + priority;
 
     if (task->flags & TASK_FLAGS_URGENT)
@@ -145,7 +145,7 @@ STATIC VOID rq_task_add(TASK *task, RUN_QUEUE *rq)
 /**PROC-***********************************************************************/
 STATIC VOID rq_task_del(TASK *task, RUN_QUEUE *rq)
 {
-    BYTE priority = task->priority;
+    UINT8 priority = task->priority;
     LQE *list = rq->queue_array + priority;
 
     list_del(&task->run_node);
@@ -347,7 +347,7 @@ VOID sched_unlock(VOID)
 /*           IN task     - task control block                                 */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID task_set_inherit_priority(BYTE priority, TASK *task)
+VOID task_set_inherit_priority(UINT8 priority, TASK *task)
 {
     sched_lock();
 
@@ -407,16 +407,16 @@ VOID task_clear_inherit_priority(TASK *task)
 /**PROC-***********************************************************************/
 VOID task_stack_check(TASK *task)
 {
-    ULONG sig = (ULONG)task;
-    ULONG *base = (ULONG *)task_get_stack_base(task);
-    ULONG *top = (ULONG *)(task->stack_base + task->stack_size);
+    UINT32 sig = (UINT32)task;
+    UINT32 *base = (UINT32 *)task_get_stack_base(task);
+    UINT32 *top = (UINT32 *)(task->stack_base + task->stack_size);
 
     BUG_ON((sizeof(ADDRESS) - 1) & (ADDRESS)base);
     BUG_ON((sizeof(ADDRESS) - 1) & (ADDRESS)top);
     BUG_ON(task->stack < (ADDRESS)base);
     BUG_ON(task->stack > (ADDRESS)top);
 
-    for (INT i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(ULONG); i++) {
+    for (INT i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(UINT32); i++) {
         BUG_ON((sig ^ (i * 0x01010101)) != base[i]);
         BUG_ON((sig ^ (i * 0x10101010)) != top[i]);
     }
@@ -434,10 +434,10 @@ VOID task_stack_check(TASK *task)
 /* Params:   IN task   - TASK control block                                   */
 /*                                                                            */
 /**PROC-***********************************************************************/
-ULONG task_measure_stack_usage(TASK *task)
+UINT32 task_measure_stack_usage(TASK *task)
 {
-    ULONG *base = (ULONG *)task->stack_base;
-    ULONG size = task->stack_size/sizeof(ULONG);
+    UINT32 *base = (UINT32 *)task->stack_base;
+    UINT32 size = task->stack_size/sizeof(UINT32);
     int i;
 
     for (i = 0; i < size; i ++) {
@@ -445,7 +445,7 @@ ULONG task_measure_stack_usage(TASK *task)
             break;
     }
 
-    return (size - i) * sizeof(ULONG);
+    return (size - i) * sizeof(UINT32);
 }
 #endif
 
@@ -461,7 +461,7 @@ ULONG task_measure_stack_usage(TASK *task)
 /*           IN s_size - task stack size                                      */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATIC VOID task_init_stack(TASK *task, ADDRESS s_base, ULONG s_size)
+STATIC VOID task_init_stack(TASK *task, ADDRESS s_base, UINT32 s_size)
 {
 #ifdef TASK_STACK_SIZE_MINIMUM
     BUG_ON(s_size < TASK_STACK_SIZE_MINIMUM);
@@ -469,25 +469,25 @@ STATIC VOID task_init_stack(TASK *task, ADDRESS s_base, ULONG s_size)
 
 #ifdef TASK_STACK_CHECK
     {
-        ULONG sig = (ULONG)task;
-        ULONG *base = (ULONG *)s_base;
-        ULONG *top = (ULONG *)(s_base + s_size - TASK_STACK_CHECK_DATA_SIZE);
+        UINT32 sig = (UINT32)task;
+        UINT32 *base = (UINT32 *)s_base;
+        UINT32 *top = (UINT32 *)(s_base + s_size - TASK_STACK_CHECK_DATA_SIZE);
         INT i;
-        for (i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(ULONG); i++) {
+        for (i = 0; i < TASK_STACK_CHECK_DATA_SIZE/sizeof(UINT32); i++) {
             base[i] = (sig ^ (i * 0x01010101));
             top[i] = (sig ^ (i * 0x10101010));
         }
         BUG_ON(&base[i] >= &top[0]);
-        s_base += i * sizeof(ULONG);
-        s_size -= i * sizeof(ULONG) * 2;
+        s_base += i * sizeof(UINT32);
+        s_size -= i * sizeof(UINT32) * 2;
         BUG_ON(s_size < 256);
     }
 #endif
 
 #ifdef TASK_STACK_MEASURE
     {
-        ULONG *base = (ULONG *)s_base;
-        ULONG size = s_size/sizeof(ULONG);
+        UINT32 *base = (UINT32 *)s_base;
+        UINT32 size = s_size/sizeof(UINT32);
         INT i;
         for (i = 0; i < size; i++)
             base[i] = 0xdeadbeaf;
@@ -587,7 +587,7 @@ STATIC VOID task_timeout_proc(VOID *para)
 /*           IN info    - cleanup data                                        */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID task_suspend(TASK *task, LONG ticks, CLEANUP cleanup, VOID *info)
+VOID task_suspend(TASK *task, TICK_COUNT ticks, CLEANUP cleanup, VOID *info)
 {
     TASK *to;
 
@@ -779,7 +779,7 @@ VOID task_entry_wrapper(VOID)
 /* Idle task control block & stack                                            */
 /******************************************************************************/
 STATIC TASK idle_task;
-STATIC BYTE idle_task_stack[IDLE_TASK_STACK_SIZE];
+STATIC UINT8 idle_task_stack[IDLE_TASK_STACK_SIZE];
 
 /**PROC+***********************************************************************/
 /* Name:     idle_task_entry                                                  */

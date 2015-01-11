@@ -58,43 +58,43 @@ typedef struct task {
     /**************************************************************************/
     /* Stack size                                                             */
     /**************************************************************************/
-    ULONG stack_size;
+    UINT32 stack_size;
 
     /**************************************************************************/
     /* Task state, one of TASK_STATE_(RUNNING, SUSPEND, ZOMBIE)               */
     /**************************************************************************/
-    BYTE state;
+    UINT8 state;
 
     /**************************************************************************/
     /* Task priority                                                          */
     /**************************************************************************/
-    BYTE priority;
+    UINT8 priority;
 
     /**************************************************************************/
     /* Task default priority                                                  */
     /**************************************************************************/
-    BYTE default_priority;
+    UINT8 default_priority;
 
     /**************************************************************************/
     /* Task flags, one of TASK_FLAGS_(TICK_SCHED, URGENT)                     */
     /**************************************************************************/
-    BYTE flags;
+    UINT8 flags;
 
     /**************************************************************************/
     /* How many mutexes have been locked. When all mutexes are unlocked, task */
     /* is restored to its original priority.                                  */
     /**************************************************************************/
-    CHAR mutex_count;
+    INT8 mutex_count;
 
     /**************************************************************************/
     /* Original priority, used for mutex                                      */
     /**************************************************************************/
-    BYTE original_priority;
+    UINT8 original_priority;
 
     /**************************************************************************/
     /* Scheduler lock count                                                   */
     /**************************************************************************/
-    SHORT lock_count;
+    INT16 lock_count;
 
     /**************************************************************************/
     /* Task time slice schedule value                                         */
@@ -149,12 +149,12 @@ typedef struct task {
 /**STRUCT-*********************************************************************/
 typedef struct {
     CONST CHAR *name;        /* task name               */
-    BYTE priority;           /* task priority           */
-    BYTE flags;              /* task flags              */
+    UINT8 priority;           /* task priority           */
+    UINT8 flags;              /* task flags              */
     TASK_ENTRY entry;        /* task entry function     */
     VOID *para;              /* task private data       */
     ADDRESS stack_base;      /* task stack base address */
-    ULONG stack_size;        /* task stack size         */
+    UINT32 stack_size;        /* task stack size         */
 } TASK_PARA;
 
 /******************************************************************************/
@@ -166,7 +166,7 @@ VOID task_lock(VOID);
 VOID task_unlock(VOID);
 
 VOID task_create(TASK *task, TASK_PARA *para, BOOL auto_start);
-VOID task_suspend(TASK *task, LONG ticks, CLEANUP cleanup, VOID *info);
+VOID task_suspend(TASK *task, TICK_COUNT ticks, CLEANUP cleanup, VOID *info);
 VOID task_resume(TASK *task);
 
 VOID task_yield(VOID);
@@ -176,12 +176,12 @@ VOID task_exit(VOID);
 VOID sched_lock(VOID);
 VOID sched_unlock(VOID);
 
-STATIC INLINE ULONG task_get_stack_base(TASK *task)
+STATIC INLINE UINT32 task_get_stack_base(TASK *task)
 {
     return task->stack_base - TASK_STACK_CHECK_DATA_SIZE;
 }
 
-STATIC INLINE ULONG task_get_stack_size(TASK *task)
+STATIC INLINE UINT32 task_get_stack_size(TASK *task)
 {
     return task->stack_size + 2 * TASK_STACK_CHECK_DATA_SIZE;
 }
@@ -191,10 +191,10 @@ VOID task_stack_check(TASK *to);
 #endif
 
 #ifdef TASK_STACK_MEASURE
-ULONG task_measure_stack_usage(TASK *task);
+UINT32 task_measure_stack_usage(TASK *task);
 #endif
 
-VOID task_set_inherit_priority(BYTE priority, TASK *task);
+VOID task_set_inherit_priority(UINT8 priority, TASK *task);
 VOID task_clear_inherit_priority(TASK *task);
 
 #endif /* _MINIOS_TASK_H_ */

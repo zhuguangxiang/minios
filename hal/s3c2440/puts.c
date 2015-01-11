@@ -14,7 +14,6 @@
 #include "common/stdio.h"
 #include "common/error.h"
 #include "common/string.h"
-#include "dev/device.h"
 
 /******************************************************************************/
 /* Default standard character output device handle                            */

@@ -27,7 +27,7 @@
 /******************************************************************************/
 /* Bitmap of hsr_array                                                        */
 /******************************************************************************/
-STATIC ULONG hsr_bitmap;
+STATIC UINT32 hsr_bitmap;
 
 /******************************************************************************/
 /* HSR priority queue                                                         */
@@ -107,7 +107,7 @@ VOID isr_handle_pending_hsrs(VOID)
 /**PROC-***********************************************************************/
 VOID activiate_hsr(HSR *hsr, VOID *data)
 {
-    BYTE priority = hsr->priority;
+    UINT8 priority = hsr->priority;
 
     BUG_ON(priority >= HSR_PRIORITY_MAX_NR);
 

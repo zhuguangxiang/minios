@@ -19,7 +19,7 @@
 #include "hal/platform.h"
 
 /* find first set, return 0 - 32 */
-STATIC INLINE INT __ffs(ULONG bits)
+STATIC INLINE INT __ffs(UINT32 bits)
 {
     /* ffs(0) => 0, ffs(1) => 1, ffs(2) => 2, ffs(256) => 9, ffs(-1) = 1 */
     INT plus = 0;
@@ -81,24 +81,24 @@ VOID task_entry_wrapper(VOID);
 
 STATIC INLINE VOID arm7_9_buid_stack(ADDRESS *stack_addr)
 {
-    ULONG *stack = *(ULONG **)stack_addr;
+    UINT32 *stack = *(UINT32 **)stack_addr;
 
-    *--stack = (ULONG)(ARM_MODE_SVC | ARM_FIQ_BIT); /* CPSR */
-    *--stack = (ULONG)task_entry_wrapper;           /* PC */
-    *--stack = (ULONG)0;    /* LR */
-    *--stack = (ULONG)0;    /* R12 = IP(intra-procedure scratch register) */
-    *--stack = (ULONG)0;    /* R11 = FP(frame pointer) */
-    *--stack = (ULONG)0;    /* R10  */
-    *--stack = (ULONG)0;    /* R9   */
-    *--stack = (ULONG)0;    /* R8   */
-    *--stack = (ULONG)0;    /* R7   */
-    *--stack = (ULONG)0;    /* R6   */
-    *--stack = (ULONG)0;    /* R5   */
-    *--stack = (ULONG)0;    /* R4   */
-    *--stack = (ULONG)0;    /* R3   */
-    *--stack = (ULONG)0;    /* R2   */
-    *--stack = (ULONG)0;    /* R1   */
-    *--stack = (ULONG)0;    /* R0   */
+    *--stack = (UINT32)(ARM_MODE_SVC | ARM_FIQ_BIT); /* CPSR */
+    *--stack = (UINT32)task_entry_wrapper;           /* PC */
+    *--stack = (UINT32)0;    /* LR */
+    *--stack = (UINT32)0;    /* R12 = IP(intra-procedure scratch register) */
+    *--stack = (UINT32)0;    /* R11 = FP(frame pointer) */
+    *--stack = (UINT32)0;    /* R10  */
+    *--stack = (UINT32)0;    /* R9   */
+    *--stack = (UINT32)0;    /* R8   */
+    *--stack = (UINT32)0;    /* R7   */
+    *--stack = (UINT32)0;    /* R6   */
+    *--stack = (UINT32)0;    /* R5   */
+    *--stack = (UINT32)0;    /* R4   */
+    *--stack = (UINT32)0;    /* R3   */
+    *--stack = (UINT32)0;    /* R2   */
+    *--stack = (UINT32)0;    /* R1   */
+    *--stack = (UINT32)0;    /* R0   */
 
     *stack_addr = (ADDRESS)stack;
 }

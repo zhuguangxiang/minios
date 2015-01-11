@@ -26,7 +26,7 @@ VOID sched_unlock(VOID);
 /******************************************************************************/
 /* Local variables                                                            */
 /******************************************************************************/
-volatile ULONG jiffies;
+volatile UINT32 jiffies;
 STATIC LQE timer_active_list;
 
 /**PROC+***********************************************************************/
@@ -122,7 +122,7 @@ VOID tick_increase(VOID)
 /*           IN data   - user data                                            */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID timer_start(TIMER *timer, LONG ticks, TIMEOUT_PROC proc, VOID *data)
+VOID timer_start(TIMER *timer, TICK_COUNT ticks, TIMEOUT_PROC proc, VOID *data)
 {
     LQE *pos;
     TIMER *t;

@@ -18,21 +18,21 @@
 
 VOID s3c2440_enable_irq(INT irq)
 {
-    ULONG tmp = READ_REG(INTMASK);
+    UINT32 tmp = READ_REG(INTMASK);
     tmp &= ~(1 << irq);
     WRITE_REG(INTMASK, tmp);
 }
 
 VOID s3c2440_disable_irq(INT irq)
 {
-    ULONG tmp = READ_REG(INTMASK);
+    UINT32 tmp = READ_REG(INTMASK);
     tmp |= (1 << irq);
     WRITE_REG(INTMASK, tmp);
 }
 
 VOID s3c2440_clear_irq(INT irq)
 {
-    ULONG tmp = READ_REG(SRCPND);
+    UINT32 tmp = READ_REG(SRCPND);
     tmp |= (1 << irq);
     WRITE_REG(SRCPND, tmp);
 
@@ -55,21 +55,21 @@ INT s3c2440_get_subirq(VOID)
 
 VOID s3c2440_enable_subirq(INT subirq)
 {
-    ULONG tmp = READ_REG(INTSUBMASK);
+    UINT32 tmp = READ_REG(INTSUBMASK);
     tmp &= ~(1 << subirq);
     WRITE_REG(INTSUBMASK, tmp);
 }
 
 VOID s3c2440_disable_subirq(INT subirq)
 {
-    ULONG tmp = READ_REG(INTSUBMASK);
+    UINT32 tmp = READ_REG(INTSUBMASK);
     tmp |= (1 << subirq);
     WRITE_REG(INTSUBMASK, tmp);
 }
 
 VOID s3c2440_clear_subirq(INT subirq)
 {
-    ULONG tmp = READ_REG(SUBSRCPND);
+    UINT32 tmp = READ_REG(SUBSRCPND);
     tmp |= (1 << subirq);
     WRITE_REG(SUBSRCPND, tmp);
 }

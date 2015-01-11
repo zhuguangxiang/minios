@@ -76,7 +76,6 @@ compile "common/strlen.c"
 compile "common/strcmp.c"
 compile "common/strcpy.c"
 compile "common/printf.c"
-compile "common/assert.c"
 compile "common/panic.c"
 ar "obj/common/*.o" "libcommon.a"
 

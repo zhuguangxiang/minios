@@ -16,8 +16,8 @@
 
 #include "common/types.h"
 
-#define READ_REG(addr)  *(volatile ULONG *)(addr)
-#define WRITE_REG(addr, val) *(volatile ULONG *)(addr) = (val)
+#define READ_REG(addr)  *(volatile UINT32 *)(addr)
+#define WRITE_REG(addr, val) *(volatile UINT32 *)(addr) = (val)
 
 #endif /* _HAL_S3C2440_IO_H_ */
 

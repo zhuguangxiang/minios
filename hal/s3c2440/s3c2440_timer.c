@@ -52,7 +52,7 @@ VOID s3c2440_do_timer_interrupt(INT irq, VOID *data)
 /**PROC-***********************************************************************/
 VOID s3c2440_init_timer(VOID)
 {
-    ULONG tmp;
+    UINT32 tmp;
 
     register_irq(S3C2440_IRQ_TIMER0, s3c2440_do_timer_interrupt, NULL);
 
