@@ -29,10 +29,6 @@ typedef struct {
     /**************************************************************************/
     /* Queue of waiting tasks                                                 */
     /**************************************************************************/
-    MUTEX *cv_mutex;
-    /**************************************************************************/
-    /* Queue of waiting tasks                                                 */
-    /**************************************************************************/
     WAIT_QUEUE cv_queue;
 } COND_VAR;
 
@@ -41,7 +37,7 @@ typedef struct {
 
 STATIC INLINE VOID init_cond(COND_VAR *cond)
 {
-    init_wait_queue(&cond->cv_queue);
+    init_wait_queue(&cond->cv_queue, WQ_TYPE_FIFO);
 }
 
 STATUS cond_wait(COND_VAR *cond, MUTEX *mutex, TICK_COUNT timeout);

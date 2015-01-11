@@ -61,6 +61,9 @@ typedef UINT32   HANDLE;
 typedef UINT32   ADDRESS;
 typedef INT      TICK_COUNT;
 
+#define WAIT_FOREVER -1
+#define NO_WAIT      0
+
 /******************************************************************************/
 /* MIN()/MAX() Macros                                                         */
 /******************************************************************************/

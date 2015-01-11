@@ -84,6 +84,7 @@ compile "kernel/hsr.c"
 compile "kernel/wait_queue.c"
 compile "kernel/timer.c"
 compile "kernel/mutex.c"
+compile "kernel/cond_var.c"
 ar "obj/kernel/*.o" "libkernel.a"
 
 compile "common/arm/div0.c"
