@@ -85,6 +85,8 @@ compile "kernel/wait_queue.c"
 compile "kernel/timer.c"
 compile "kernel/mutex.c"
 compile "kernel/cond_var.c"
+compile "kernel/semaphore.c"
+compile "kernel/msg_queue.c"
 ar "obj/kernel/*.o" "libkernel.a"
 
 compile "common/arm/div0.c"
@@ -110,6 +112,8 @@ ar "obj/hal/s3c2440/*.o" "libs3c2440.a"
 
 compile "app/app.c"
 compile "app/test_mutex.c"
+compile "app/test_sema.c"
+compile "app/test_mq.c"
 
 ld "minios.elf" "obj/app/*.o" "-larm7_9 -ls3c2440 -lcommon -lkernel -larm -ls3c2440 -L."
 dump "minios.elf" "minios.elf.dump.txt"

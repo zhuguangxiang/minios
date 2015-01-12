@@ -49,6 +49,7 @@
 #define EDEVNOSUPP       202   /* Device does not support this operation */
 
 #define ETIMEOUT         1000  /* Waiting resource timeout */
+#define ENOAVAIL         1001  /* Resource not available */
 
 char *strerror(int errnum);
 

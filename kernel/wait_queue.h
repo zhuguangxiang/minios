@@ -58,6 +58,7 @@ STATIC INLINE VOID init_wait_queue(WAIT_QUEUE *wq, INT type)
 }
 
 #define WAIT_QUEUE_COUNT(wq) ((wq)->wq_count)
+#define WAIT_QUEUE_EMPTY(wq) list_empty(&(wq)->wq_list)
 
 /******************************************************************************/
 /* if return value is not 0, wake_up_all will stop handle next wait node      */
@@ -66,17 +67,17 @@ STATIC INLINE VOID init_wait_queue(WAIT_QUEUE *wq, INT type)
 /******************************************************************************/
 typedef INT (*WAKEUP_FUNC)(VOID *data1, VOID *data2);
 
-INT sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data);
+STATUS sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data);
 VOID wake_up(WAIT_QUEUE *wq, INT nr_exclusive, WAKEUP_FUNC func, VOID *data);
 
 STATIC INLINE VOID wake_up_one(WAIT_QUEUE *wq, WAKEUP_FUNC func, VOID *data)
 {
-    wake_up(wq, 0, func, data);
+    wake_up(wq, 1, func, data);
 }
 
 STATIC INLINE VOID wake_up_all(WAIT_QUEUE *wq, WAKEUP_FUNC func, VOID *data)
 {
-     wake_up(wq, -1, func, data);
+     wake_up(wq, 0, func, data);
 }
 
 #endif /* _MINIOS_WAIT_QUEUE_H_ */

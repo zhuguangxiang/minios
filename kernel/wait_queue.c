@@ -138,7 +138,7 @@ STATIC VOID wq_timeout_proc(VOID *data)
 /*           IN data  - user data will be passed to WAKEUP_FUNC               */
 /*                                                                            */
 /**PROC-***********************************************************************/
-INT sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data)
+STATUS sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data)
 {
     WAIT_NODE wn = WAIT_NODE_INIT(wn, data);
 
