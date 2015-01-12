@@ -28,3 +28,9 @@ Embedded Operating System Just Funny
     + interrupt is divided into ISR and HSR(enabled interrupt mode)
     + init various modules using gcc section
 
+*v0.05*
+
+    + mutex, condition variable, semaphore and message queue implemented
+	+ adjust init function of mutex, condition, semaphore and msg_queue.
+	+ TODO:msg_queue maybe changed to message buffer not message pointer.
+
