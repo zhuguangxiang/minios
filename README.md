@@ -34,3 +34,10 @@ Embedded Operating System Just Funny
 	+ adjust init function of mutex, condition, semaphore and msg_queue.
 	+ TODO:msg_queue maybe changed to message buffer not message pointer.
 
+*v0.06*
+
+	+ linux fifo
+	+ msg_queue uses fifo instead of message pointer
+	+ virtual file system
+
+
