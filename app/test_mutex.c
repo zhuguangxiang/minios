@@ -12,7 +12,7 @@ union {
 	char _stack[8192];
 } test_mutex_task_1, test_mutex_task_2, test_mutex_task_3;
 
-MUTEX test_mutex = MUTEX_INITIALIZER(test_mutex, MUTEX_PROTOCOL_INHERIT);
+MUTEX test_mutex = MUTEX_INIT(test_mutex, MUTEX_PROTOCOL_INHERIT);
 
 void test_mutex_task_1_entry(void *p)
 {

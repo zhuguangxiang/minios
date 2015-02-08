@@ -30,40 +30,40 @@ void puts(const char *fmt)
 
 
 union {
-	TASK _task;
-	char _stack[8192];
+    TASK _task;
+    char _stack[8192];
 } test_task_1, test_task_2, test_task_3;
 
 WAIT_QUEUE wq = WAIT_QUEUE_INIT(wq, WQ_TYPE_PRIO);
 
 INT wake_up_func(VOID *data1, VOID *data2)
 {
-	printf("wakeup %s\r\n", ((TASK*)data1)->name);
-	return 0;
+    printf("wakeup %s\r\n", ((TASK*)data1)->name);
+    return 0;
 }
 
 void test_task_1_entry(void *p)
 {
     while (1) {
         printf("%s\r\n", current->name);
-		sleep_on(&wq, 0, current);
+        sleep_on(&wq, 0, current);
         //task_sleep(1);
         //task_struct_resume(&test_task_2, 0);
-		//task_yield();
+        //task_yield();
     }
 }
 
 void test_task_2_entry(void *p)
 {
-	int count = 0;
+    int count = 0;
     while (1) {
         printf("%s\r\n", current->name);
-		//task_sleep(1);
+        //task_sleep(1);
         //task_struct_resume(&test_task_1, 0);
         //task_sleep(1);
-	    //task_yield();
-		++count;
-		sleep_on(&wq, 0, current);
+        //task_yield();
+        ++count;
+        sleep_on(&wq, 0, current);
     }
 }
 
@@ -79,18 +79,40 @@ void test_task_3_entry(void *p)
         .stack_size = 8192 - sizeof(TASK),
     };
 
-	task_create((TASK *)&test_task_2, &task_para, 1);
+    task_create((TASK *)&test_task_2, &task_para, 1);
 
-	int count = 0;
+    int count = 0;
     while (1) {
         printf("%s\r\n", current->name);
-		//task_sleep(1);
+        //task_sleep(1);
         //task_struct_resume(&test_task_1, 0);
         task_sleep(1);
-	    //task_yield();
-		++count;
-		wake_up_all(&wq, wake_up_func, NULL);
+        //task_yield();
+        ++count;
+        wake_up_all(&wq, wake_up_func, NULL);
     }
+}
+
+VOID s3c2440_do_usbd_interrupt(INT irq, VOID *data)
+{
+    s3c2440_disable_irq(irq);
+    
+    s3c2440_clear_irq(irq);
+    s3c2440_enable_irq(irq);
+}
+
+void usbd_gpio_c_5_set(void)
+{
+    UINT32 tmp = READ_REG(GPCCON);
+    tmp |= (1 << 10);
+    WRITE_REG(GPCCON, tmp);
+
+    tmp = READ_REG(GPCDAT);
+    tmp |= (1 << 5);
+    WRITE_REG(GPCDAT, tmp);
+
+    register_irq(S3C2440_IRQ_USBD, s3c2440_do_usbd_interrupt, NULL);
+    s3c2440_enable_irq(S3C2440_IRQ_USBD);
 }
 
 void app_start(void)
@@ -107,22 +129,23 @@ void app_start(void)
 
     task_create((TASK *)&test_task_1, &task_para, 1);
 
-	task_para.name = "test_task_2";
-	task_para.entry = test_task_2_entry;
-	task_para.priority = 9;
-	task_para.stack_base = (ADDRESS)&test_task_2 + sizeof(TASK);
+    task_para.name = "test_task_2";
+    task_para.entry = test_task_2_entry;
+    task_para.priority = 9;
+    task_para.stack_base = (ADDRESS)&test_task_2 + sizeof(TASK);
 
-	//task_create((TASK *)&test_task_2, &task_para, 1);
+    //task_create((TASK *)&test_task_2, &task_para, 1);
 
-	task_para.name = "test_task_3";
-	task_para.entry = test_task_3_entry;
-	task_para.priority = 13;
-	task_para.stack_base = (ADDRESS)&test_task_3 + sizeof(TASK);
+    task_para.name = "test_task_3";
+    task_para.entry = test_task_3_entry;
+    task_para.priority = 13;
+    task_para.stack_base = (ADDRESS)&test_task_3 + sizeof(TASK);
 
-	task_create((TASK *)&test_task_3, &task_para, 1);
+    task_create((TASK *)&test_task_3, &task_para, 1);
 
-	//app_test_mutex();
-	//app_test_sema();
+    //usbd_gpio_c_5_set();
+    app_test_mutex();
+    app_test_sem();
     app_test_mq();
 }
 

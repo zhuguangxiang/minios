@@ -70,7 +70,7 @@ typedef struct mutex {
 /******************************************************************************/
 /* Macros to initialize mutex                                                 */
 /******************************************************************************/
-#define MUTEX_INITIALIZER(name, protocol) \
+#define MUTEX_INIT(name, protocol) \
     {FALSE, protocol, NULL, WAIT_QUEUE_INIT((name).queue, WQ_TYPE_FIFO)}
 
 STATIC INLINE VOID init_mutex(MUTEX *mutex, INT protocol)

@@ -32,25 +32,25 @@ typedef struct {
     /* Queue of waiting tasks                                                 */
     /**************************************************************************/
     WAIT_QUEUE sm_wait_q;
-} SEMA;
+} SEM;
 
 /******************************************************************************/
 /* Macros to initialize semaphore                                             */
 /******************************************************************************/
-#define __SEMA_INIT(name, count, type) \
+#define __SEM_INIT(name, count, type) \
     {count, WAIT_QUEUE_INIT((name).sm_wait_q, type)}
-#define SEMA_FIFO_INIT(name, count)  __SEMA_INIT(name, count, WQ_TYPE_FIFO)
-#define SEMA_PRIO_INIT(name, count)  __SEMA_INIT(name, count, WQ_TYPE_PRIO)
+#define SEM_FIFO_INIT(name, count)  __SEM_INIT(name, count, WQ_TYPE_FIFO)
+#define SEM_PRIO_INIT(name, count)  __SEM_INIT(name, count, WQ_TYPE_PRIO)
 
-STATIC INLINE VOID init_sema(SEMA *sem, INT count, INT type)
+STATIC INLINE VOID init_sem(SEM *sem, INT count, INT type)
 {
     BUG_ON((type != WQ_TYPE_FIFO) && (type != WQ_TYPE_PRIO));
     sem->sm_count = count;
     init_wait_queue(&sem->sm_wait_q, type);
 }
 
-STATUS sem_obtain(SEMA *sem, TICK_COUNT timeout);
-VOID sem_release(SEMA *sem);
+STATUS sem_obtain(SEM *sem, TICK_COUNT timeout);
+VOID sem_release(SEM *sem);
 
 #endif /* _MINIOS_SEMAPHORE_H_ */
 

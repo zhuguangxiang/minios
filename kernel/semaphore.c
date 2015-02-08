@@ -27,7 +27,7 @@
 /*           IN timeout - time interval of waiting for the semaphore          */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATUS sem_obtain(SEMA *sem, TICK_COUNT timeout)
+STATUS sem_obtain(SEM *sem, TICK_COUNT timeout)
 {
     STATUS result;
 
@@ -69,7 +69,7 @@ STATUS sem_obtain(SEMA *sem, TICK_COUNT timeout)
 /* Params:   IN sem - the semaphore to be released                            */
 /*                                                                            */
 /**PROC-***********************************************************************/
-VOID sem_release(SEMA *sem)
+VOID sem_release(SEM *sem)
 {
     /**************************************************************************/
     /* Prevent preemption                                                     */

@@ -15,6 +15,8 @@
 #define _MINIOS_MSG_QUEUE_H_
 
 #include "kernel/wait_queue.h"
+#include "common/fifo.h"
+#include "common/bug.h"
 
 /**STRUCT+*********************************************************************/
 /* Structure: MSG_Q                                                           */
@@ -23,29 +25,19 @@
 /**STRUCT-*********************************************************************/
 typedef struct {
     /**************************************************************************/
-    /* Pointer to message queue buffer                                        */
+    /* FIFO of the queue                                                      */
     /**************************************************************************/
-    VOID **mq_buf;
-
-    /**************************************************************************/
-    /* Write position of message queue                                        */
-    /**************************************************************************/
-    UINT16 mq_write;
-
-    /**************************************************************************/
-    /* Read position of message queue                                         */
-    /**************************************************************************/
-    UINT16 mq_read;
-
-    /**************************************************************************/
-    /* Message queue capacity                                                 */
-    /**************************************************************************/
-    UINT16 mq_capacity;
+    FIFO mq_fifo;
 
     /**************************************************************************/
     /* Current number of messages in the queue                                */
     /**************************************************************************/
-    UINT16 mq_count;
+    UINT32 mq_count;
+
+    /**************************************************************************/
+    /* MAX length of msg                                                      */
+    /**************************************************************************/
+    UINT32 mq_max_msg_len;
 
     /**************************************************************************/
     /* Wait queue                                                             */
@@ -53,30 +45,32 @@ typedef struct {
     WAIT_QUEUE mq_wait_q;
 } MSG_Q;
 
-#define MQ_INIT(name, buf, capacity) \
-    {buf, 0, 0, capacity, 0, WAIT_QUEUE_INIT((name).mq_wait_q, WQ_TYPE_FIFO)}
-
-STATIC INLINE VOID init_mq(MSG_Q *mq, VOID **buf, UINT16 capacity)
+STATIC INLINE VOID init_mq(MSG_Q *mq, UINT8 *buffer, UINT32 size,
+    INT max_msg_len, INT type)
 {
-    mq->mq_buf = buf;
-    mq->mq_write = 0;
-    mq->mq_read = 0;
-    mq->mq_capacity = capacity;
+    BUG_ON(size < (max_msg_len + 4));
+
+    fifo_init(&mq->mq_fifo, buffer, size);
     mq->mq_count = 0;
-    init_wait_queue(&mq->mq_wait_q, WQ_TYPE_FIFO);
+    mq->mq_max_msg_len = max_msg_len;
+    init_wait_queue(&mq->mq_wait_q, type);
 }
 
-STATUS mq_recv_msg(MSG_Q *mq, TICK_COUNT timeout, VOID **msg);
-STATUS __mq_send_msg(MSG_Q *mq, VOID *msg, TICK_COUNT timeout, BOOL broadcast);
+STATUS mq_recv_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+    UINT32 *actual_len, TICK_COUNT timeout);
+STATUS __mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+    TICK_COUNT timeout, BOOL broadcast);
 
-STATIC INLINE STATUS mq_send_msg(MSG_Q *mq, VOID *msg, TICK_COUNT timeout)
+STATIC INLINE STATUS mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+    TICK_COUNT timeout)
 {
-    return __mq_send_msg(mq, msg, timeout, FALSE);
+    return __mq_send_msg(mq, buffer, len, timeout, FALSE);
 }
 
-STATIC INLINE STATUS mq_broadcast_msg(MSG_Q *mq, VOID *msg, TICK_COUNT timeout)
+STATIC INLINE STATUS mq_broadcast_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+    TICK_COUNT timeout)
 {
-    return __mq_send_msg(mq, msg, timeout, TRUE);
+    return __mq_send_msg(mq, buffer, len, timeout, TRUE);
 }
 
 #endif /* _MINIOS_MSG_QUEUE_H_ */

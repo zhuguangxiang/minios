@@ -1,7 +1,7 @@
 /**INC+************************************************************************/
-/* Header:  s3c2440_interrupt.h                                               */
+/* Header:  fifo.h                                                            */
 /*                                                                            */
-/* Purpose: s3c2440 interrupt functions                                       */
+/* Purpose: A simple FIFO implementation.                                     */
 /*                                                                            */
 /* Author:  ZhuGuangXiang                                                     */
 /*                                                                            */
@@ -11,32 +11,27 @@
 /*                                                                            */
 /**INC-************************************************************************/
 
-#ifndef _HAL_S3C2440_INTERRUPT_H_
-#define _HAL_S3C2440_INTERRUPT_H_
+#ifndef _MINIOS_FIFO_H_
+#define _MINIOS_FIFO_H_
 
 #include "common/types.h"
 
-VOID s3c2440_enable_irq(INT irq);
-VOID s3c2440_disable_irq(INT irq);
-VOID s3c2440_clear_irq(INT irq);
-INT s3c2440_get_irq(VOID);
-VOID s3c2440_enable_subirq(INT subirq);
-VOID s3c2440_disable_subirq(INT subirq);
-VOID s3c2440_clear_subirq(INT subirq);
-INT s3c2440_get_subirq(VOID);
+typedef struct fifo {
+    UINT8 *buffer;
+    UINT32 size;
+    UINT32 in;
+    UINT32 out;
+} FIFO;
 
-typedef VOID (*INT_HANDLE)(INT, VOID *);
-VOID register_irq(INT irq, INT_HANDLE handler, VOID *data);
+/* size must be less than MAX size of UINT32 */
+#define FIFO_MAX_SIZE 0x80000000
 
-#define S3C2440_IRQS_NR     32
-#define S3C2440_IRQ_TIMER0  10
-#define S3C2440_IRQ_USBD    25
-#define S3C2440_IRQ_UART0   28
-#define S3C2440_IRQ_ADC		31
+VOID fifo_init(FIFO *fifo, UINT8 *buffer, UINT32 size);
+UINT32 fifo_put(FIFO *fifo, UINT8 *buffer, UINT32 len);
+UINT32 fifo_get(FIFO *fifo, UINT8 *buffer, UINT32 len);
+UINT32 fifo_count(FIFO *fifo);
+UINT32 fifo_space(FIFO *fifo);
 
-#define S3C2440_SUBIRQ_ADC_S	10
-#define S3C2440_SUBIRQ_TC		9
-
-#endif /* _HAL_S3C2440_INTERRUPT_H_ */
+#endif /* _FIFO_H_ */
 
 /******************************************************************************/
