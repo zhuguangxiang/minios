@@ -38,6 +38,7 @@ Embedded Operating System Just Funny
 
 	+ linux fifo
 	+ msg_queue uses fifo instead of message pointer
-	+ virtual file system
+	+ mem_pool implementation
+
 
 

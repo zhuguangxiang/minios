@@ -56,18 +56,18 @@ STATIC INLINE VOID init_mq(MSG_Q *mq, UINT8 *buffer, UINT32 size,
     init_wait_queue(&mq->mq_wait_q, type);
 }
 
-STATUS mq_recv_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+INT mq_recv_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     UINT32 *actual_len, TICK_COUNT timeout);
-STATUS __mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+INT __mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     TICK_COUNT timeout, BOOL broadcast);
 
-STATIC INLINE STATUS mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+STATIC INLINE INT mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     TICK_COUNT timeout)
 {
     return __mq_send_msg(mq, buffer, len, timeout, FALSE);
 }
 
-STATIC INLINE STATUS mq_broadcast_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+STATIC INLINE INT mq_broadcast_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     TICK_COUNT timeout)
 {
     return __mq_send_msg(mq, buffer, len, timeout, TRUE);

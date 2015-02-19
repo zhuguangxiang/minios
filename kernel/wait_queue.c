@@ -40,7 +40,7 @@ typedef struct wait_node {
     /**************************************************************************/
     /* Task waiting whether is timeout or not                                 */
     /**************************************************************************/
-    STATUS wn_status;
+    INT wn_status;
 
     /**************************************************************************/
     /* User private data                                                      */
@@ -138,7 +138,7 @@ STATIC VOID wq_timeout_proc(VOID *data)
 /*           IN data  - user data will be passed to WAKEUP_FUNC               */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATUS sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data)
+INT sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data)
 {
     WAIT_NODE wn = WAIT_NODE_INIT(wn, data);
 

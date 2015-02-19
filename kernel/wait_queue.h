@@ -67,7 +67,7 @@ STATIC INLINE VOID init_wait_queue(WAIT_QUEUE *wq, INT type)
 /******************************************************************************/
 typedef INT (*WAKEUP_FUNC)(VOID *data1, VOID *data2);
 
-STATUS sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data);
+INT sleep_on(WAIT_QUEUE *wq, TICK_COUNT ticks, VOID *data);
 VOID wake_up(WAIT_QUEUE *wq, INT nr_exclusive, WAKEUP_FUNC func, VOID *data);
 
 STATIC INLINE VOID wake_up_one(WAIT_QUEUE *wq, WAKEUP_FUNC func, VOID *data)

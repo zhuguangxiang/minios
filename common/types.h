@@ -56,7 +56,6 @@ typedef signed   int     BOOL;       /* boolean                               */
 /* Kernel Types                                                               */
 /******************************************************************************/
 typedef UINT32   CPU_FLAGS;
-typedef INT      STATUS;
 typedef UINT32   HANDLE;
 typedef UINT32   ADDRESS;
 typedef INT      TICK_COUNT;

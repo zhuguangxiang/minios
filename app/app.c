@@ -115,6 +115,11 @@ void usbd_gpio_c_5_set(void)
     s3c2440_enable_irq(S3C2440_IRQ_USBD);
 }
 
+void app_test_mutex(void);
+void app_test_sem(void);
+void app_test_mq(void);
+void test_mem_pool(void);
+
 void app_start(void)
 {
     TASK_PARA task_para = {
@@ -147,6 +152,7 @@ void app_start(void)
     app_test_mutex();
     app_test_sem();
     app_test_mq();
+	test_mem_pool();
 }
 
 /*--------------------------------------------------------------------------*/

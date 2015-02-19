@@ -70,15 +70,15 @@ typedef struct mutex {
 /******************************************************************************/
 /* Macros to initialize mutex                                                 */
 /******************************************************************************/
-#define MUTEX_INIT(name, protocol) \
-    {FALSE, protocol, NULL, WAIT_QUEUE_INIT((name).queue, WQ_TYPE_FIFO)}
+#define MUTEX_INIT(name, protocol, wait_type) \
+    {FALSE, protocol, NULL, WAIT_QUEUE_INIT((name).queue, wait_type)}
 
-STATIC INLINE VOID init_mutex(MUTEX *mutex, INT protocol)
+STATIC INLINE VOID init_mutex(MUTEX *mutex, INT protocol, INT wait_type)
 {
     mutex->locked = FALSE;
     mutex->protocol = protocol;
     mutex->owner = NULL;
-    init_wait_queue(&mutex->queue, WQ_TYPE_FIFO);
+    init_wait_queue(&mutex->queue, wait_type);
 }
 
 VOID mutex_lock(MUTEX *mutex);

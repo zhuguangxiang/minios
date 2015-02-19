@@ -27,9 +27,9 @@
 /*           IN timeout - time interval of waiting for the semaphore          */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATUS sem_obtain(SEM *sem, TICK_COUNT timeout)
+INT sem_obtain(SEM *sem, TICK_COUNT timeout)
 {
-    STATUS result;
+    INT result;
 
     /**************************************************************************/
     /* Prevent preemption                                                     */

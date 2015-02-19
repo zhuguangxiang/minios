@@ -89,6 +89,15 @@ compile "kernel/semaphore.c"
 compile "kernel/msg_queue.c"
 ar "obj/kernel/*.o" "libkernel.a"
 
+compile "mm/mem_pool.c"
+ar "obj/mm/*.o" "libmm.a"
+
+compile "fs/fd.c"
+compile "fs/mount.c"
+compile "fs/open.c"
+compile "fs/read_write.c"
+ar "obj/fs/*.o" "libvfs.a"
+
 compile "common/arm/div0.c"
 compile "common/arm/_divsi3.S"
 compile "common/arm/_modsi3.S"
@@ -114,8 +123,9 @@ compile "app/app.c"
 compile "app/test_mutex.c"
 compile "app/test_sem.c"
 compile "app/test_mq.c"
+compile "app/test_mempool.c"
 
-ld "minios.elf" "obj/app/*.o" "-lkernel -lcommon -larm -larm7_9 -ls3c2440 -L."
+ld "minios.elf" "obj/app/*.o" "-lkernel -lmm -lvfs -lcommon -larm -larm7_9 -ls3c2440 -L."
 dump "minios.elf" "minios.elf.dump.txt"
 bin "minios.elf" "minios.bin"
 

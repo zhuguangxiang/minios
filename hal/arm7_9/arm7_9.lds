@@ -50,6 +50,17 @@ SECTIONS
     }
     __cmd_end = .;
 
+    . = ALIGN(4);
+
+    .fs_tbl :
+    {
+        __FS_TBL_START__ = .;
+        *(.fs_tbl)
+        __FS_TBL_END__ = .;
+    }
+
+    . = ALIGN(4);
+
     _etext = .;
 
     . = ALIGN(4);

@@ -140,6 +140,7 @@ typedef struct task {
     /* Task name                                                              */
     /**************************************************************************/
     CONST CHAR *name;
+
 } TASK;
 
 /**STRUCT+*********************************************************************/
@@ -161,9 +162,6 @@ typedef struct {
 /* Current task control block, can be used directly                           */
 /******************************************************************************/
 extern TASK *current;
-
-VOID task_lock(VOID);
-VOID task_unlock(VOID);
 
 VOID task_create(TASK *task, TASK_PARA *para, BOOL auto_start);
 VOID task_suspend(TASK *task, TICK_COUNT ticks, CLEANUP cleanup, VOID *info);

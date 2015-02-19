@@ -18,7 +18,7 @@
 /******************************************************************************/
 /* Default standard character output device handle                            */
 /******************************************************************************/
-STATIC HANDLE tty_handle;
+//STATIC HANDLE tty_handle;
 
 /**PROC+***********************************************************************/
 /* Name:     puts                                                             */
@@ -32,8 +32,9 @@ STATIC HANDLE tty_handle;
 /**PROC-***********************************************************************/
 VOID __puts(CONST CHAR *str)
 {
+#if 0
     UINT count;
-    STATUS res;
+    INT res = ENOERR;
 
     if (0 == tty_handle) {
         //res = device_lookup("/dev/tty0", &tty_handle);
@@ -46,6 +47,7 @@ VOID __puts(CONST CHAR *str)
     count = strlen(str);
 
     //device_write(tty_handle, str, &count);
+#endif
 }
 
 /******************************************************************************/

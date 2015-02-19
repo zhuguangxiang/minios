@@ -86,10 +86,10 @@ STATIC INT mq_wakeup_send_msg(VOID *data1, VOID *data2)
 /*           IN timeout - time interval of waiting for receiving msg          */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATUS mq_recv_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+INT mq_recv_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     UINT32 *actual_len, TICK_COUNT timeout)
 {
-    STATUS result;
+    INT result;
     UINT32 msg_size = 0;
     MSG_BUF_INFO msg;
     UINT32 l;
@@ -181,6 +181,7 @@ STATIC INT mq_wakeup_recv_msg(VOID *data1, VOID *data2)
     memcpy(recv_msg->buffer, send_msg->buffer, send_msg->len);
 
     recv_msg->actual_len = send_msg->len;
+
     return 0;
 }
 
@@ -199,10 +200,10 @@ STATIC INT mq_wakeup_recv_msg(VOID *data1, VOID *data2)
 /*           IN broadcast - send msg to all waiting task                      */
 /*                                                                            */
 /**PROC-***********************************************************************/
-STATUS __mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
+INT __mq_send_msg(MSG_Q *mq, VOID *buffer, UINT32 len,
     TICK_COUNT timeout, BOOL broadcast)
 {
-    STATUS result;
+    INT result;
     MSG_BUF_INFO msg;
     UINT32 l;
 

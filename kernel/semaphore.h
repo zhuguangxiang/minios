@@ -49,7 +49,7 @@ STATIC INLINE VOID init_sem(SEM *sem, INT count, INT type)
     init_wait_queue(&sem->sm_wait_q, type);
 }
 
-STATUS sem_obtain(SEM *sem, TICK_COUNT timeout);
+INT sem_obtain(SEM *sem, TICK_COUNT timeout);
 VOID sem_release(SEM *sem);
 
 #endif /* _MINIOS_SEMAPHORE_H_ */
