@@ -68,8 +68,8 @@ struct vfs_mount {
 };
 
 struct vfs_file_operations {
-    INT32 (*read)(VFS_FILE *, VOID *, UINT32, UINT32 *);
-    INT32 (*write)(VFS_FILE *, VOID *, UINT32, UINT32 *);
+    INT32 (*read)(VFS_FILE *, UINT8 *, UINT32);
+    INT32 (*write)(VFS_FILE *, UINT8 *, UINT32);
     INT   (*lseek)(VFS_FILE *, INT32, INT);
     INT   (*release)(VFS_FILE *);
     INT   (*ioctl)(VFS_FILE *, UINT32, VOID *);
@@ -80,6 +80,7 @@ struct vfs_file {
     UINT32 f_flags;
     INT32  f_count;
     UINT32 f_offset;
+    VOID *f_data;
     VFS_FILE_OPERATIONS *f_ops;
     VFS_MOUNT *f_mnt;
 };
@@ -117,7 +118,7 @@ typedef struct {
 #define SEEK_MAX    SEEK_END
 
 INT vfs_path_lookup(CONST CHAR **name, VFS_MOUNT **mnt, VFS_DIR *dir);
-INT mount(CONST CHAR *dev_name, CONST CHAR *dir, CONST CHAR *fs_name);
+INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name);
 INT umount(CONST CHAR *name);
 
 VFS_FILE *get_empty_filp(VOID);
@@ -141,6 +142,13 @@ INT close(INT fd);
 INT read(INT fd, VOID *buf, UINT32 len);
 INT write(INT fd, VOID *buf, UINT32 len);
 INT lseek(INT fd, INT32 offset, INT whence);
+
+extern VFS_MOUNT *curr_mnt;
+extern VFS_DIR curr_dir;
+
+VFS_MOUNT *find_mnt(CONST CHAR *name);
+VOID init_fd_table(VOID);
+VOID init_rootfs(VOID);
 
 #endif /* _MINIOS_FS_H_ */
 

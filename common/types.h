@@ -59,6 +59,7 @@ typedef UINT32   CPU_FLAGS;
 typedef UINT32   HANDLE;
 typedef UINT32   ADDRESS;
 typedef INT      TICK_COUNT;
+typedef UINT32   TIME;
 
 #define WAIT_FOREVER -1
 #define NO_WAIT      0

@@ -25,6 +25,7 @@
 #define ENOMEM           12    /* Out of memory */
 
 #define EBUSY            16    /* Resource busy */
+#define EEXIST           17    /* File exists */
 #define EXDEV            18    /* Cross-device link */
 #define ENODEV           19    /* No such device */
 #define ENOTDIR          20    /* Not a directory */

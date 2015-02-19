@@ -98,6 +98,9 @@ compile "fs/open.c"
 compile "fs/read_write.c"
 ar "obj/fs/*.o" "libvfs.a"
 
+compile "fs/ram/ramfs.c"
+ar "obj/fs/ram/*.o" "libramfs.a"
+
 compile "common/arm/div0.c"
 compile "common/arm/_divsi3.S"
 compile "common/arm/_modsi3.S"
@@ -124,8 +127,9 @@ compile "app/test_mutex.c"
 compile "app/test_sem.c"
 compile "app/test_mq.c"
 compile "app/test_mempool.c"
+compile "app/test_fs.c"
 
-ld "minios.elf" "obj/app/*.o" "-lkernel -lmm -lvfs -lcommon -larm -larm7_9 -ls3c2440 -L."
+ld "minios.elf" "obj/app/*.o" "-lkernel -lmm -lramfs -lvfs -lramfs -lcommon -larm -larm7_9 -ls3c2440 -L."
 dump "minios.elf" "minios.elf.dump.txt"
 bin "minios.elf" "minios.bin"
 

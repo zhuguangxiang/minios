@@ -15,9 +15,15 @@
 #include "mm/mem_pool.h"
 
 STATIC MEM_POOL file_pool;
-STATIC CHAR mm_files[sizeof(VFS_FILE) * FILE_MAX_NR];
-
+STATIC UINT8 mm_files[sizeof(VFS_FILE) * FILE_MAX_NR];
 STATIC VFS_FD_TBL fd_table;
+
+VOID init_fd_table(VOID)
+{
+    mem_pool_init(&file_pool, mm_files, sizeof(mm_files),
+                  sizeof(VFS_FILE), WQ_TYPE_FIFO);
+    init_mutex(&fd_table.file_lock, MUTEX_PROTOCOL_INHERIT, WQ_TYPE_FIFO);
+}
 
 VFS_FILE *get_empty_filp(VOID)
 {

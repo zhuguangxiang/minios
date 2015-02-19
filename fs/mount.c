@@ -14,8 +14,6 @@
 #include "fs/fs.h"
 
 STATIC VFS_MOUNT mnt_table[MNT_MAX_NR];
-VFS_MOUNT *root_mnt;
-VFS_DIR root_dir;
 VFS_MOUNT *curr_mnt;
 VFS_DIR curr_dir;
 
@@ -45,49 +43,54 @@ INT vfs_path_lookup(CONST CHAR **name, VFS_MOUNT **mnt, VFS_DIR *dir)
 {
     VFS_MOUNT *best;
     VFS_MOUNT *m;
-    INT best_len;
-    INT mnt_len;
-    INT len;
+    INT best_len = 0;
     INT i;
+    INT len;
+    INT mnt_len;
 
     if ('/' == **name) {
         /* search from root mount */
-        *mnt = root_mnt;
-        *dir = root_dir;
+        for (i = 0; i < MNT_MAX_NR; i++) {
+            m = &mnt_table[i];
+            if (NULL == m->mnt_name)
+                continue;
+
+            len = match_len(*name, m->mnt_name);
+            if (len > best_len)
+                best = m, best_len = len;
+        }
+
+        if (0 == best_len) return -EINVAL;
+
+        *dir = best->mnt_root;
+
     } else {
         /* search from current mount */
         *mnt = curr_mnt;
         *dir = curr_dir;
-    }
 
-    best = *mnt;
-    best_len = 0;
-    mnt_len = strlen((*mnt)->mnt_name);
+        best = *mnt;
+        mnt_len = strlen((*mnt)->mnt_name);
 
-    for (i = 0; i < MNT_MAX_NR; i++) {
+        for (i = 0; i < MNT_MAX_NR; i++) {
+            m = &mnt_table[i];
+            if (NULL == m->mnt_name)
+                continue;
 
-        m = &mnt_table[i];
-        if (NULL == m->mnt_name)
-            continue;
-
-        len = match_len(m->mnt_name, (*mnt)->mnt_name);
-        if (len == mnt_len) {
-            if ('/' == **name) {
-                len = 0;
-            } else {
+            len = match_len(m->mnt_name, (*mnt)->mnt_name);
+            if (len == mnt_len) {
                 if ('/' == m->mnt_name[len])
                     len++;
-            }
-            len = match_len(*name, &m->mnt_name[len]);
-            if (len > best_len) {
-                best = m;
-                best_len = len;
+
+                len = match_len(*name, &m->mnt_name[len]);
+                if (len > best_len)
+                    best = m, best_len = len;
             }
         }
-    }
 
-    if (best != *mnt)
-        *dir = best->mnt_root;
+        if (best != *mnt)
+            *dir = best->mnt_root;
+    }
 
     *name += best_len;
     if ('/' == **name)
@@ -100,7 +103,7 @@ INT vfs_path_lookup(CONST CHAR **name, VFS_MOUNT **mnt, VFS_DIR *dir)
 
 extern VFS_FILE_SYSTEM __FS_TBL_START__, __FS_TBL_END__;
 
-INT mount(CONST CHAR *dev_name, CONST CHAR *dir, CONST CHAR *fs_name)
+INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name)
 {
     VFS_MOUNT *m;
     VFS_FILE_SYSTEM *fs;
@@ -132,11 +135,10 @@ INT mount(CONST CHAR *dev_name, CONST CHAR *dir, CONST CHAR *fs_name)
     m->mnt_name = dir;
 
     res = fs->fs_ops->mount(m, fs);
-    if (ENOERR != res) {
+    if (ENOERR == res)
         m->mnt_fs = fs;
-    } else {
+    else
         m->mnt_name = NULL;
-    }
 
     return res;
 }
@@ -159,7 +161,7 @@ INT umount(CONST CHAR *name)
             break;
     }
 
-    if (i != MNT_MAX_NR)
+    if (i == MNT_MAX_NR)
         return -EINVAL;
 
     res = m->mnt_fs->fs_ops->umount(m);
@@ -167,6 +169,23 @@ INT umount(CONST CHAR *name)
         m->mnt_name = NULL;
 
     return res;
+}
+
+VFS_MOUNT *find_mnt(CONST CHAR *name)
+{
+    VFS_MOUNT *m;
+    INT i;
+
+    for (i = 0; i < MNT_MAX_NR; i++) {
+        m = &mnt_table[i];
+        if (NULL == m->mnt_name)
+            continue;
+
+        if (0 == strcmp(m->mnt_name, name))
+            break;
+    }
+
+    return (i == MNT_MAX_NR) ? NULL : m;
 }
 
 /******************************************************************************/

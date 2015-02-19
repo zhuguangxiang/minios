@@ -295,7 +295,7 @@ STATIC VOID switch_to(TASK *to)
 /**PROC-***********************************************************************/
 VOID sched_lock(VOID)
 {
-    if (NULL == current)
+    if ((FALSE == os_running) || (NULL == current))
         return;
 
     ++current->lock_count;
@@ -316,7 +316,7 @@ VOID sched_unlock(VOID)
     INT lock;
     TASK *to;
 
-    if (NULL == current)
+    if ((FALSE == os_running) || (NULL == current))
         return;
 
     lock = current->lock_count - 1;
@@ -819,6 +819,7 @@ STATIC INLINE VOID init_idle_task(VOID)
     };
 
     task_create(&idle_task, &idle_task_para, 1);
+    current = &idle_task;
 }
 
 /**PROC+***********************************************************************/

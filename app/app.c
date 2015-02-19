@@ -12,6 +12,12 @@
 #include "hal/s3c2440/s3c2440_interrupt.h"
 #include "common/stdio.h"
 
+void app_test_mutex(void);
+void app_test_sem(void);
+void app_test_mq(void);
+void test_mem_pool(void);
+void test_fs(void);
+
 #define UAR0_TX_FIFO_FULL()  ((READ_REG(UFSTAT0) & 0x4000) ? 1 : 0)
 
 void put_char(char ch)
@@ -56,6 +62,7 @@ void test_task_1_entry(void *p)
 void test_task_2_entry(void *p)
 {
     int count = 0;
+
     while (1) {
         printf("%s\r\n", current->name);
         //task_sleep(1);
@@ -115,11 +122,6 @@ void usbd_gpio_c_5_set(void)
     s3c2440_enable_irq(S3C2440_IRQ_USBD);
 }
 
-void app_test_mutex(void);
-void app_test_sem(void);
-void app_test_mq(void);
-void test_mem_pool(void);
-
 void app_start(void)
 {
     TASK_PARA task_para = {
@@ -148,11 +150,12 @@ void app_start(void)
 
     task_create((TASK *)&test_task_3, &task_para, 1);
 
+	test_fs();
     //usbd_gpio_c_5_set();
-    app_test_mutex();
-    app_test_sem();
-    app_test_mq();
-	test_mem_pool();
+    //app_test_mutex();
+    //app_test_sem();
+    //app_test_mq();
+	//test_mem_pool();
 }
 
 /*--------------------------------------------------------------------------*/

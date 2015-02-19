@@ -13,7 +13,7 @@
 
 #include "fs/fs.h"
 
-STATIC INT do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len, UINT32 *pos)
+STATIC INT do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
     INT res;
 
@@ -23,7 +23,7 @@ STATIC INT do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len, UINT32 *pos)
     if (!filp->f_ops || !filp->f_ops->read)
         return -EINVAL;
 
-    res = filp->f_ops->read(filp, buf, len, pos);
+    res = filp->f_ops->read(filp, buf, len);
 
     return res;
 }
@@ -34,16 +34,14 @@ INT read(INT fd, VOID *buf, UINT32 len)
     VFS_FILE *filp = fget(fd);
 
     if (NULL != filp) {
-        UINT32 pos = filp->f_offset;
-        res = do_filp_read(filp, buf, len, &pos);
-        filp->f_offset = pos;
+        res = do_filp_read(filp, buf, len);
         fput(filp);
     }
 
     return res;
 }
 
-STATIC INT do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len, UINT32 *pos)
+STATIC INT do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
     INT res;
 
@@ -53,7 +51,7 @@ STATIC INT do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len, UINT32 *pos)
     if (!filp->f_ops || !filp->f_ops->write)
         return -EINVAL;
 
-    res = filp->f_ops->write(filp, buf, len, pos);
+    res = filp->f_ops->write(filp, buf, len);
 
     return res;
 }
@@ -64,9 +62,7 @@ INT write(INT fd, VOID *buf, UINT32 len)
     VFS_FILE *filp = fget(fd);
 
     if (NULL != filp) {
-        UINT32 pos = filp->f_offset;
-        res = do_filp_write(filp, buf, len, &pos);
-        filp->f_offset = pos;
+        res = do_filp_write(filp, buf, len);
         fput(filp);
     }
 
