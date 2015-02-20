@@ -14,6 +14,7 @@
 #include "mm/mem_pool.h"
 #include "common/bug.h"
 #include "kernel/task.h"
+#include "common/string.h"
 
 #if (MEM_POOL_TWICE_FREE_CHECK > 0)
 
@@ -37,7 +38,11 @@ STATIC VOID mem_pool_twice_free_check(MEM_POOL *pool, UINT32 blk_idx)
 
 STATIC VOID mem_pool_wild_pointer_check(MEM_POOL *pool)
 {
-    
+    if (pool->blk_lfree != BLOCK_END) {
+        UINT8 *p = pool->start + pool->blk_size * pool->blk_lfree;
+        for (INT i = 0; i < pool->blk_size; i++)
+            BUG_ON(p[i] != BLOCK_BYTE_MAGIC);
+    }
 }
 
 #endif
@@ -59,6 +64,7 @@ VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size, UINT32 *blk_map,
     BUG_ON(size < 4);
     BUG_ON(size < blk_size);
     BUG_ON(size % blk_size);
+    BUG_ON((size / blk_size) > (~BLOCK_END + 1));
 
     pool->start     = start;
     pool->size      = size;
@@ -69,9 +75,15 @@ VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size, UINT32 *blk_map,
     pool->blk_free  = 0;
     pool->blk_lfree = pool->blk_num - 1;
 
+    init_mem_pool_map(pool);
     init_mutex(&pool->lock, MUTEX_PROTOCOL_INHERIT, wait);
 
-    init_mem_pool_map(pool);
+#if (MEM_POOL_WILD_POINTER_CHECK > 0)
+
+    memset(pool->start, BLOCK_BYTE_MAGIC, pool->size);
+
+#endif
+
 }
 
 VOID *mem_pool_alloc(MEM_POOL *pool)
@@ -82,6 +94,10 @@ VOID *mem_pool_alloc(MEM_POOL *pool)
     BUG_ON(pool->blk_free > BLOCK_END);
 
     mutex_lock(&pool->lock);
+
+#if (MEM_POOL_WILD_POINTER_CHECK > 0)
+    mem_pool_wild_pointer_check(pool);
+#endif
 
     if (pool->blk_free != BLOCK_END) {
         /* queue is available */
@@ -124,6 +140,10 @@ VOID mem_pool_free(MEM_POOL *pool, VOID *b)
     mem_pool_twice_free_check(pool, idx);
 #endif
 
+#if (MEM_POOL_WILD_POINTER_CHECK > 0)
+    mem_pool_wild_pointer_check(pool);
+#endif
+
     if (pool->blk_lfree != BLOCK_END) {
         /* queue is partial */
         BUG_ON(pool->blk_map[pool->blk_lfree] != BLOCK_END);
@@ -136,6 +156,10 @@ VOID mem_pool_free(MEM_POOL *pool, VOID *b)
         BUG_ON(pool->blk_free != BLOCK_END);
         pool->blk_free = pool->blk_lfree = idx;
     }
+
+#if (MEM_POOL_WILD_POINTER_CHECK > 0)
+    memset(b, BLOCK_BYTE_MAGIC, pool->blk_size);
+#endif
 
     pool->blk_map[idx] = BLOCK_END;
     --pool->blk_inuse;

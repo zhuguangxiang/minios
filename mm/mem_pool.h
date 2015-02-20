@@ -31,7 +31,8 @@ typedef struct {
     MUTEX  lock;        /* pool lock */
 } MEM_POOL;
 
-#define BLOCK_END    0xFF000000
+#define BLOCK_END           0xFF000000
+#define BLOCK_BYTE_MAGIC    0xc5
 
 #define POOL_MAP(name, blk_num) UINT32 name[blk_num]
 
