@@ -15,74 +15,77 @@
 #include "common/bug.h"
 #include "kernel/task.h"
 
-STATIC INLINE VOID init_mem_pool_block_map(MEM_POOL *pool)
+STATIC INLINE VOID init_mem_pool_map(MEM_POOL *pool)
 {
     UINT32 i;
+    UINT32 *map;
 
-    for (i = 0; i < pool->block_total_count; i++)
-        pool->block_start[i] = i + 1;
-    pool->block_start[pool->block_total_count - 1] = POOL_BLOCK_END;
+    for (i = 0; i < pool->blk_num; i++) {
+        map = (UINT32 *)(pool->start + pool->blk_size * i);
+        *map = i + 1;
+    }
+
+    /* last block */
+    map = (UINT32 *)(pool->start + pool->blk_size * (i - 1));
+    *map = POOL_BLOCK_END;
 }
 
-VOID mem_pool_init(MEM_POOL *pool, VOID *mem_start, UINT32 mem_size,
-    UINT32 block_size, INT wait_type)
+VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size,
+                   UINT32 blk_size, INT wait)
 {
-    BUG_ON(mem_size < 4);
-    BUG_ON(mem_size < block_size);
-    BUG_ON(mem_size % block_size);
-    BUG_ON(mem_size/block_size > (~POOL_BLOCK_END + 1));
+    BUG_ON(size < 4);
+    BUG_ON(size < blk_size);
+    BUG_ON(size % blk_size);
+    BUG_ON(size / blk_size > (~POOL_BLOCK_END + 1));
 
-    pool->mem_start = mem_start;
-    pool->mem_size = mem_size;
+    pool->start     = start;
+    pool->size      = size;
+    pool->blk_size  = blk_size;
+    pool->blk_num   = size/blk_size;
+    pool->blk_inuse = 0;
+    pool->blk_free  = 0;
 
-    pool->block_start = mem_start;
-    pool->block_size = block_size;
-    pool->free_block_index = 0;
+    init_mutex(&pool->lock, MUTEX_PROTOCOL_INHERIT, wait);
 
-    pool->block_total_count = mem_size/block_size;
-    pool->block_free_count = pool->block_total_count;
-
-    init_mutex(&pool->mm_mutex, MUTEX_PROTOCOL_INHERIT, wait_type);
-
-    init_mem_pool_block_map(pool);
+    init_mem_pool_map(pool);
 }
 
 VOID *mem_pool_alloc(MEM_POOL *pool)
 {
     VOID *block = NULL;
 
-    mutex_lock(&pool->mm_mutex);
+    mutex_lock(&pool->lock);
 
-    if (pool->free_block_index != POOL_BLOCK_END) {
+    if (pool->blk_free != POOL_BLOCK_END) {
         /* memory available */
-        block = (UINT8 *)pool->block_start +
-                pool->free_block_index * pool->block_size;
-        pool->free_block_index = pool->block_start[pool->free_block_index];
-        --pool->block_free_count;
+        block = pool->start + pool->blk_free * pool->blk_size;
+        pool->blk_free = *(UINT32 *)block;
+        ++pool->blk_inuse;
     }
 
-    mutex_unlock(&pool->mm_mutex);
+    mutex_unlock(&pool->lock);
 
     return block;
 }
 
-VOID mem_pool_free(MEM_POOL *pool, VOID *block)
+VOID mem_pool_free(MEM_POOL *pool, VOID *b)
 {
-    UINT32 block_index;
+    UINT32 idx;
+    UINT32 *map;
 
-    BUG_ON(((UINT8 *)block < (UINT8 *)pool->block_start) ||
-        ((UINT8 *)block > (UINT8 *)pool->block_start +
-            pool->block_size * pool->block_total_count));
+    BUG_ON((UINT8 *)b < pool->start);
+    BUG_ON((UINT8 *)b > (pool->start + pool->size));
+    BUG_ON(((UINT8 *)b - pool->start) % pool->blk_size);
 
-    mutex_lock(&pool->mm_mutex);
+    mutex_lock(&pool->lock);
 
-    block_index = ((UINT8 *)block - (UINT8 *)pool->block_start) /
-                  pool->block_size;
-    pool->block_start[block_index] = pool->free_block_index;
-    pool->free_block_index = block_index;
-    ++pool->block_free_count;
+    idx = ((UINT8 *)b - pool->start) / pool->blk_size;
+    map = (UINT32 *)(pool->start + pool->blk_size * idx);
+    *map = pool->blk_free;
+    pool->blk_free = idx;
+    --pool->blk_inuse;
 
-    mutex_unlock(&pool->mm_mutex);
+    mutex_unlock(&pool->lock);
 }
 
 /******************************************************************************/

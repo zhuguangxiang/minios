@@ -18,23 +18,19 @@
 #include "kernel/mutex.h"
 
 typedef struct {
-    VOID *mem_start;
-    UINT32 mem_size;
-
-    UINT32 *block_start;
-    UINT32 block_size;
-    UINT32 free_block_index;
-
-    UINT32 block_total_count;
-    UINT32 block_free_count;
-
-    MUTEX mm_mutex;
+    UINT8 *start;       /* pool memory start address */
+    UINT32 size;        /* pool memory size */
+    UINT32 blk_size;    /* block size */
+    UINT32 blk_num;     /* block total number */
+    UINT32 blk_inuse;   /* used block number */
+    UINT32 blk_free;    /* free block index */
+    MUTEX  lock;        /* pool lock */
 } MEM_POOL;
 
 #define POOL_BLOCK_END   0xFF000000
 
-VOID mem_pool_init(MEM_POOL *pool, VOID *mem_start, UINT32 mem_size,
-    UINT32 block_size, INT wait_type);
+VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size,
+                   UINT32 blk_size, INT wait);
 VOID *mem_pool_alloc(MEM_POOL *pool);
 VOID mem_pool_free(MEM_POOL *pool, VOID *block);
 
