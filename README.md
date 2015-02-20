@@ -46,7 +46,7 @@ Embedded Operating System Just Funny
 	+ ramfs impl from ecos and linux kernel
 	+ memory pool changed from stack impl to queue impl
 	+ memory pool supports twice free check and wild pointer check
-
+	+ update to v0.07
 
 
 
