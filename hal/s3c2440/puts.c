@@ -34,11 +34,11 @@ VOID __puts(CONST CHAR *str)
 {
 #if 0
     UINT count;
-    INT res = ENOERR;
+    INT ret = ENOERR;
 
     if (0 == tty_handle) {
-        //res = device_lookup("/dev/tty0", &tty_handle);
-        if (ENOERR != res) {
+        //ret = device_lookup("/dev/tty0", &tty_handle);
+        if (ENOERR != ret) {
             tty_handle = 0;
             return;
         }

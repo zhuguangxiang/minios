@@ -13,28 +13,33 @@
 
 #include "fs/fs.h"
 
-STATIC VFS_FILE *do_filp_open(CONST CHAR *path, INT oflag)
+STATIC VFS_FILE *do_filp_open(CONST CHAR *path, INT oflag, INT *error)
 {
     VFS_MOUNT *mnt;
     VFS_DIR dir;
     VFS_FILE *filp;
-    INT res;
+    INT ret;
     VFS_PATH_INFO path_info;
 
-    res = vfs_path_lookup(&path, &mnt, &dir);
-    if (ENOERR != res)
+    ret = vfs_path_lookup(&path, &mnt, &dir);
+    if (ENOERR != ret) {
+        *error = ret;
         return NULL;
+    }
 
     filp = get_empty_filp();
-    if (NULL == filp)
+    if (NULL == filp) {
+        *error = -EMFILE;
         return NULL;
+    }
 
     path_info.name = path;
     path_info.dir = dir;
 
-    res = mnt->mnt_fs->fs_ops->open(mnt, &path_info, oflag, filp);
-    if (ENOERR != res) {
+    ret = mnt->mnt_fs->fs_ops->open(mnt, &path_info, oflag, filp);
+    if (ENOERR != ret) {
         __fput(filp);
+        *error = ret;
         return NULL;
     }
 
@@ -46,6 +51,7 @@ STATIC VFS_FILE *do_filp_open(CONST CHAR *path, INT oflag)
 INT open(CONST CHAR *path, INT oflag, ...)
 {
     INT fd;
+    INT error = ENOERR;
 
     if (0 == (oflag & O_RDWR))
         return -EINVAL;
@@ -53,10 +59,10 @@ INT open(CONST CHAR *path, INT oflag, ...)
     fd = get_unused_fd();
 
     if (fd >= 0) {
-        VFS_FILE *filp = do_filp_open(path, oflag);
+        VFS_FILE *filp = do_filp_open(path, oflag, &error);
         if (NULL == filp) {
             put_unused_fd(fd);
-            fd = -1;
+            return error;
         } else {
             fd_assign(fd, filp);
         }
@@ -65,7 +71,7 @@ INT open(CONST CHAR *path, INT oflag, ...)
     return fd;
 }
 
-/* create a file */
+/* create a file, and return fd if successful */
 INT creat(CONST CHAR *path, UINT32 mode)
 {
     return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
@@ -73,21 +79,21 @@ INT creat(CONST CHAR *path, UINT32 mode)
 
 STATIC INT do_filp_close(VFS_FILE *filp)
 {
-    INT res = ENOERR;
+    INT ret = ENOERR;
 
     BUG_ON(0 == filp->f_count);
 
     if (filp->f_ops && filp->f_ops->flush)
-        res = filp->f_ops->flush(filp);
+        ret = filp->f_ops->flush(filp);
 
     fput(filp);
 
-    return res;
+    return ret;
 }
 
 INT close(INT fd)
 {
-    INT res;
+    INT ret;
     VFS_FILE *filp;
 
     mutex_lock(&fd_table.file_lock);
@@ -105,9 +111,9 @@ INT close(INT fd)
 
     mutex_unlock(&fd_table.file_lock);
 
-    res = do_filp_close(filp);
+    ret = do_filp_close(filp);
 
-    return res;
+    return ret;
 }
 
 /******************************************************************************/

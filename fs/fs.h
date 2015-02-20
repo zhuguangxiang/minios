@@ -70,7 +70,7 @@ struct vfs_mount {
 struct vfs_file_operations {
     INT32 (*read)(VFS_FILE *, UINT8 *, UINT32);
     INT32 (*write)(VFS_FILE *, UINT8 *, UINT32);
-    INT   (*lseek)(VFS_FILE *, INT32, INT);
+    INT   (*lseek)(VFS_FILE *, INT32 *, INT);
     INT   (*flush)(VFS_FILE *);
     INT   (*release)(VFS_FILE *);
     INT   (*ioctl)(VFS_FILE *, UINT32, VOID *);
@@ -144,20 +144,25 @@ VOID fd_assign(INT fd, VFS_FILE *filp);
 #define FD_ALLOCATED  ((VOID *)1)
 #define FILE_PTR_VALID(filp) ((NULL != filp) && (FD_ALLOCATED != filp))
 
-INT open(CONST CHAR *path, INT oflag, ...);
 INT close(INT fd);
-INT read(INT fd, VOID *buf, UINT32 len);
-INT write(INT fd, VOID *buf, UINT32 len);
-INT lseek(INT fd, INT32 offset, INT whence);
+INT32 read(INT fd, VOID *buf, UINT32 len);
+INT32 write(INT fd, VOID *buf, UINT32 len);
+INT32 lseek(INT fd, INT32 offset, INT whence);
+
+INT creat(CONST CHAR *path, UINT32 mode);
+INT open(CONST CHAR *path, INT oflag, ...);
 INT mkdir(CONST CHAR *path, UINT32 mode);
+INT rmdir(CONST CHAR *path);
+INT chdir(CONST CHAR *path);
+INT rename(CONST CHAR *path1, CONST CHAR *path2);
+INT link(CONST CHAR *path1, CONST CHAR *path2);
+INT unlink(CONST CHAR *path);
 
 extern VFS_FD_TBL fd_table;
 extern VFS_MOUNT mnt_table[MNT_MAX_NR];
 extern VFS_MOUNT *curr_mnt;
 extern VFS_DIR curr_dir;
 
-VFS_MOUNT *find_mnt(CONST CHAR *name);
-VOID init_fd_table(VOID);
 VOID init_rootfs(VOID);
 
 #endif /* _MINIOS_FS_H_ */

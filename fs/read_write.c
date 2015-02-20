@@ -13,9 +13,9 @@
 
 #include "fs/fs.h"
 
-STATIC INT do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len)
+STATIC INT32 do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
-    INT res;
+    INT32 read_len;
 
     if (!(filp->f_flags & O_RDONLY))
         return -EBADF;
@@ -23,27 +23,29 @@ STATIC INT do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len)
     if (!filp->f_ops || !filp->f_ops->read)
         return -EINVAL;
 
-    res = filp->f_ops->read(filp, buf, len);
+    read_len = filp->f_ops->read(filp, buf, len);
 
-    return res;
+    return read_len;
 }
 
-INT read(INT fd, VOID *buf, UINT32 len)
+INT32 read(INT fd, VOID *buf, UINT32 len)
 {
-    INT res = -EBADF;
+    INT32 read_len;
     VFS_FILE *filp = fget(fd);
 
-    if (NULL != filp) {
-        res = do_filp_read(filp, buf, len);
-        fput(filp);
-    }
+    if (NULL == filp)
+        return -EBADF;
 
-    return res;
+    read_len = do_filp_read(filp, buf, len);
+
+    fput(filp);
+
+    return read_len;
 }
 
-STATIC INT do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len)
+STATIC INT32 do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
-    INT res;
+    INT32 write_len;
 
     if (!(filp->f_flags & O_WRONLY))
         return -EBADF;
@@ -51,42 +53,47 @@ STATIC INT do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len)
     if (!filp->f_ops || !filp->f_ops->write)
         return -EINVAL;
 
-    res = filp->f_ops->write(filp, buf, len);
+    write_len = filp->f_ops->write(filp, buf, len);
 
-    return res;
+    return write_len;
 }
 
-INT write(INT fd, VOID *buf, UINT32 len)
+INT32 write(INT fd, VOID *buf, UINT32 len)
 {
-    INT res = -EBADF;
-    VFS_FILE *filp = fget(fd);
-
-    if (NULL != filp) {
-        res = do_filp_write(filp, buf, len);
-        fput(filp);
-    }
-
-    return res;
-}
-
-INT lseek(INT fd, INT32 offset, INT whence)
-{
-    INT res = -EBADF;
+    INT32 write_len;
     VFS_FILE *filp = fget(fd);
 
     if (NULL == filp)
-        return res;
+        return -EBADF;
 
-    res = -EINVAL;
+    write_len = do_filp_write(filp, buf, len);
+
+    fput(filp);
+
+    return write_len;
+}
+
+INT32 lseek(INT fd, INT32 offset, INT whence)
+{
+    INT32 ret = -EBADF;
+    VFS_FILE *filp = fget(fd);
+
+    if (NULL == filp)
+        return ret;
+
+    ret = -EINVAL;
 
     if (whence <= SEEK_MAX) {
         if (filp->f_ops && filp->f_ops->lseek)
-            res = filp->f_ops->lseek(filp, offset, whence);
+            ret = filp->f_ops->lseek(filp, &offset, whence);
     }
 
     fput(filp);
 
-    return res;
+    if (ENOERR != ret)
+        return ret;
+    else
+        return offset;
 }
 
 /******************************************************************************/

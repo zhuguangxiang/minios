@@ -79,6 +79,16 @@ SECTIONS
         *(.mod_init_lvl_8.init)
         *(.mod_init_lvl_9.init)
         *(.mod_init_lvl_10.init)
+        *(.mod_init_lvl_11.init)
+        *(.mod_init_lvl_12.init)
+        *(.mod_init_lvl_13.init)
+        *(.mod_init_lvl_14.init)
+        *(.mod_init_lvl_15.init)
+        *(.mod_init_lvl_16.init)
+        *(.mod_init_lvl_17.init)
+        *(.mod_init_lvl_18.init)
+        *(.mod_init_lvl_19.init)
+        *(.mod_init_lvl_20.init)
         __MOD_TBL_END__ = .;
     }
 

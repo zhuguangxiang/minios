@@ -17,7 +17,7 @@
 
 #define RAMFS_BLOCK_SIZE      (4*1024)
 #define RAMFS_BLOCKS_MAX_NR   8
-#define RAMFS_NAME_MAX_LEN    64
+#define RAMFS_NAME_MAX_LEN    32
 
 #define RAMFS_NODE_TOTAL_NUM  64
 #define RAMFS_BLOCK_TOTAL_NUM (RAMFS_NODE_TOTAL_NUM * RAMFS_BLOCKS_MAX_NR)
@@ -29,7 +29,7 @@ typedef struct {
 /* File and directory node */
 typedef struct {
     UINT32 mode;        /* node type */
-    INT16  refcnt;      /* reference count */
+    INT16  refcnt;      /* open file/current dir references */
     INT16  nlink;       /* number of links to this node */
     UINT32 size;        /* size of file in bytes */
     TIME   atime;       /* last access time */
@@ -97,11 +97,11 @@ STATIC INLINE RAMFS_NODE *alloc_node(UINT32 mode)
     node->atime = node->mtime = node->ctime = 0;
 
     if (S_ISDIR(mode)) {
-        INT res = add_dirent(node, ".", 1, node);
-        if (ENOERR == res)
-            res = add_dirent(node, "..", 2, node);
+        INT ret = add_dirent(node, ".", 1, node);
+        if (ENOERR == ret)
+            ret = add_dirent(node, "..", 2, node);
 
-        if (ENOERR != res) {
+        if (ENOERR != ret) {
             free_buffer(node);
             free_node(node);
             return NULL;
@@ -171,7 +171,7 @@ STATIC INT free_buffer(RAMFS_NODE *node)
  */
 STATIC INT dec_refcnt(RAMFS_NODE *node)
 {
-    INT res = ENOERR;
+    INT ret = ENOERR;
 
     BUG_ON(NULL == node);
 
@@ -194,7 +194,7 @@ STATIC INT dec_refcnt(RAMFS_NODE *node)
         free_node(node);
     }
 
-    return res;
+    return ret;
 }
 
 /* add an (file or directory) entry to a directory */
@@ -204,12 +204,12 @@ STATIC INT add_dirent(RAMFS_NODE *dir, CONST CHAR *name, UINT32 namelen,
     INT pos = 0;
     UINT8 *buf;
     UINT32 size;
-    INT res;
+    INT ret;
     RAMFS_DIRENT *d;
 
     while (1) {
-        res = find_buffer(dir, pos, &buf, &size, TRUE);
-        if (ENOERR != res) return res;
+        ret = find_buffer(dir, pos, &buf, &size, TRUE);
+        if (ENOERR != ret) return ret;
 
         d = (RAMFS_DIRENT *)buf;
         if ((size < sizeof(RAMFS_DIRENT)) || (NULL != d->node)) {
@@ -246,12 +246,12 @@ STATIC RAMFS_DIRENT *find_dirent(RAMFS_NODE *dir, CONST CHAR *name,
     INT pos = 0;
     UINT8 *buf;
     UINT32 size;
-    INT res;
+    INT ret;
     RAMFS_DIRENT *d;
 
     while (pos < dir->size) {
-        res = find_buffer(dir, pos, &buf, &size, FALSE);
-        if (ENOERR != res) return NULL;
+        ret = find_buffer(dir, pos, &buf, &size, FALSE);
+        if (ENOERR != ret) return NULL;
 
         d = (RAMFS_DIRENT *)buf;
         if ((size < sizeof(RAMFS_DIRENT)) || (NULL == d->node)) {
@@ -296,8 +296,8 @@ STATIC VOID init_dirsearch(RAMFS_DIRSEARCH *ds, RAMFS_NODE *dir,
     ds->dir = dir;
     ds->path = name;
 
-    ds->node = NULL;
-    ds->name = NULL;
+    ds->node = dir;
+    ds->name = name;
     ds->namelen = 0;
     ds->last = FALSE;
 }
@@ -319,6 +319,9 @@ STATIC INT find_entry(RAMFS_DIRSEARCH *ds)
     /* isolate the next element of the path name */
     while (('\0' != *n) && ('/' != *n))
         n++, len++;
+
+    if (len >= RAMFS_NAME_MAX_LEN)
+        return -ENAMETOOLONG;
 
     /* check if this is the last path element */
     while ('/' == *n)
@@ -346,10 +349,11 @@ STATIC INT find_entry(RAMFS_DIRSEARCH *ds)
 /* main interface to directory search */
 STATIC INT ramfs_find(RAMFS_DIRSEARCH *ds)
 {
-    INT res;
+    INT ret;
 
+    /* short circuit empty paths */
     if ('\0' == *(ds->path))
-        return -EINVAL;
+        return ENOERR;
 
     while (1) {
 
@@ -357,10 +361,10 @@ STATIC INT ramfs_find(RAMFS_DIRSEARCH *ds)
         while ('/' == *(ds->path))
             ds->path++;
 
-        res = find_entry(ds);
+        ret = find_entry(ds);
 
-        if (ENOERR != res)
-            return res;
+        if (ENOERR != ret)
+            return ret;
 
         if (TRUE == ds->last)
             return ENOERR;
@@ -390,16 +394,16 @@ STATIC INT32 ramfs_read(VFS_FILE *filp, UINT8 *buf, UINT32 len)
     RAMFS_NODE *node = filp->f_data;
     UINT32 pos = filp->f_offset;
     UINT32 read_len = 0;
-    INT res;
+    INT ret;
 
     while ((len > 0) && (pos < node->size)) {
         UINT8 *tbuf;
         UINT32 tlen;
         UINT32 n = len;
 
-        res = find_buffer(node, pos, &tbuf, &tlen, FALSE);
-        if (ENOERR != res)
-            return res;
+        ret = find_buffer(node, pos, &tbuf, &tlen, FALSE);
+        if (ENOERR != ret)
+            return ret;
 
         /* adjust size to the end of file */
         if (n > (node->size - pos))
@@ -433,7 +437,7 @@ STATIC INT32 ramfs_write(VFS_FILE *filp, UINT8 *buf, UINT32 len)
     RAMFS_NODE *node = filp->f_data;
     UINT32 pos = filp->f_offset;
     UINT32 write_len = 0;
-    INT res;
+    INT ret;
 
     if (filp->f_flags & O_APPEND)
         pos = filp->f_offset = node->size;
@@ -443,13 +447,13 @@ STATIC INT32 ramfs_write(VFS_FILE *filp, UINT8 *buf, UINT32 len)
         UINT32 tlen;
         UINT32 n = len;
 
-        res = find_buffer(node, pos, &tbuf, &tlen, TRUE);
+        ret = find_buffer(node, pos, &tbuf, &tlen, TRUE);
 
-        if (-ENOSPC == res)
+        if (-ENOSPC == ret)
             break;
 
-        if (ENOERR != res)
-            return res;
+        if (ENOERR != ret)
+            return ret;
 
         /* adjust size to this block */
         if (n > tlen)
@@ -478,6 +482,37 @@ STATIC INT32 ramfs_write(VFS_FILE *filp, UINT8 *buf, UINT32 len)
     return write_len;
 }
 
+/* seek a new file's position */
+STATIC INT ramfs_lseek(VFS_FILE *filp, INT32 *offset, INT whence)
+{
+    RAMFS_NODE *node = filp->f_data;
+    INT32 pos = *offset;
+
+    switch (whence) {
+        case SEEK_SET:
+            // Pos is already where we want to be.
+            break;
+
+        case SEEK_CUR:
+            // Add pos to current offset.
+            pos += filp->f_offset;
+            break;
+
+        case SEEK_END:
+            // Add pos to file size.
+            pos += node->size;
+            break;
+
+        default:
+            return -EINVAL;
+    }
+
+    // All OK, set filp offset and return new position.
+    *offset = filp->f_offset = pos;
+
+    return ENOERR;
+}
+
 /* close(release) a file */
 STATIC INT ramfs_release(VFS_FILE *filp)
 {
@@ -493,6 +528,7 @@ STATIC INT ramfs_release(VFS_FILE *filp)
 STATIC VFS_FILE_OPERATIONS ramfs_fileops = {
     .read  = ramfs_read,
     .write = ramfs_write,
+    .lseek = ramfs_lseek,
     .release = ramfs_release,
 };
 
@@ -501,45 +537,45 @@ STATIC INT ramfs_open(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, UINT32 mode,
 {
     RAMFS_DIRSEARCH ds;
     RAMFS_NODE *node;
-    INT res;
+    INT ret;
 
     init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
 
-    res = ramfs_find(&ds);
+    ret = ramfs_find(&ds);
 
-    if (-ENOENT == res) {
+    if (-ENOENT == ret) {
         if ((TRUE == ds.last) && (O_CREAT & mode)) {
             node = alloc_node(__stat_mode_REG|S_IRWXU|S_IRWXG|S_IRWXO);
             if (NULL == node)
                 return -ENOSPC;
 
-            res = add_dirent(ds.dir, ds.name, ds.namelen, node);
-            if (ENOERR != res) {
+            ret = add_dirent(ds.dir, ds.name, ds.namelen, node);
+            if (ENOERR != ret) {
                 free_buffer(node);
                 free_node(node);
-                return res;
+                return ret;
             }
 
-            res = ENOERR;
+            ret = ENOERR;
         }
-    } else if (ENOERR == res) {
+    } else if (ENOERR == ret) {
         if (((O_CREAT|O_EXCL) & mode) == (O_CREAT|O_EXCL))
-            res = -EEXIST;
+            ret = -EEXIST;
         else
             node = ds.node;
     }
 
-    if ((ENOERR == res) && (O_TRUNC & mode)) {
+    if ((ENOERR == ret) && (O_TRUNC & mode)) {
         /* clear node buffer */
-        res = free_buffer(node);
+        ret = free_buffer(node);
         node->size = 0;
 
         /* update file times */
         node->ctime = node->mtime = 0;
     }
 
-    if (ENOERR != res)
-        return res;
+    if (ENOERR != ret)
+        return ret;
 
     /* check that there actually is a file */
     if (S_ISDIR(node->mode))
@@ -561,13 +597,13 @@ STATIC INT ramfs_mkdir(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo)
 {
     RAMFS_DIRSEARCH ds;
     RAMFS_NODE *node;
-    INT res;
+    INT ret;
 
     init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
 
-    res = ramfs_find(&ds);
+    ret = ramfs_find(&ds);
 
-    if (-ENOENT == res) {
+    if (-ENOENT == ret) {
         if (TRUE == ds.last) {
             /* create new node */
             node = alloc_node(__stat_mode_DIR|S_IRWXU|S_IRWXG|S_IRWXO);
@@ -575,34 +611,232 @@ STATIC INT ramfs_mkdir(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo)
                 return -ENOSPC;
 
             /* add node's dir entry to its parent node */
-            res = add_dirent(ds.dir, ds.name, ds.namelen, node);
-            if (ENOERR != res) {
+            ret = add_dirent(ds.dir, ds.name, ds.namelen, node);
+            if (ENOERR != ret) {
                 free_buffer(node);
                 free_node(node);
-                return res;
+                return ret;
             }
         }
         /* if this was not the last element, then and intermediate
            directory does not exist.
         */
-    } else if (ENOERR == res) {
+    } else if (ENOERR == ret) {
         /* if there is no error, something already exists with that name */
-        res = -EEXIST;
+        ret = -EEXIST;
     }
 
-    return res;
+    return ret;
+}
+
+/* Remove a directory. FIXME: Empty directory ??? */
+STATIC INT ramfs_rmdir(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo)
+{
+    RAMFS_DIRSEARCH ds;
+    INT ret;
+
+    init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
+
+    ret = ramfs_find(&ds);
+
+    if (ENOERR != ret)
+        return ret;
+
+    /* Check that this is actually a directory. */
+    if (!S_ISDIR(ds.node->mode))
+        return -EPERM;
+
+    /* Delete the entry. This will adjust the link values
+       accordingly and if the directory is now unreferenced,
+       will cause it to be deleted.
+     */
+
+    ret = delete_dirent(ds.dir, ds.name, ds.namelen);
+
+    return ret;
+}
+
+/* Change directory support. */
+STATIC INT ramfs_chdir(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, VFS_DIR *outdir)
+{
+    if (NULL != outdir) {
+        /* This is a request to get a new directory pointer in *outdir */
+        RAMFS_DIRSEARCH ds;
+        INT ret;
+
+        init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
+
+        ret = ramfs_find(&ds);
+
+        if (ENOERR != ret)
+            return ret;
+
+        /* Check that this is a directory. */
+        if (!S_ISDIR(ds.node->mode))
+            return -ENOTDIR;
+
+        /* Increment ref count to keep this directory in existent
+            while it is the current curr_dir.
+         */
+        ds.node->refcnt++;
+
+        /* pass it out */
+        *outdir = ds.node;
+    } else {
+        /* If no output dir is required, this means that the mnt and
+           dir arguments are the current curr_dir setting and we should
+           forget this fact.
+         */
+
+        RAMFS_NODE *node = pathinfo->dir;
+
+        /* Just decrement directory reference count. */
+        dec_refcnt(node);
+    }
+
+    return ENOERR;
+}
+
+/* rename a file/dir. dir -->> dir maybe memory leak */
+STATIC INT ramfs_rename(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo1,
+                        VFS_PATH_INFO *pathinfo2)
+{
+    RAMFS_DIRSEARCH ds1, ds2;
+    INT ret;
+
+    init_dirsearch(&ds1, pathinfo1->dir, pathinfo1->name);
+
+    ret = ramfs_find(&ds1);
+
+    if (ENOERR != ret)
+        return ret;
+
+    init_dirsearch(&ds2, pathinfo2->dir, pathinfo2->name);
+
+    ret = ramfs_find(&ds2);
+
+    /* allow through renames to non-existing objects */
+    if ((TRUE == ds2.last) && (-ENOENT == ret))
+        ds2.node = NULL, ret = ENOERR;
+
+    if (ENOERR != ret)
+        return ret;
+
+    /* null rename, just return */
+    if (ds1.node == ds2.node)
+        return ENOERR;
+
+    /* deal with any entry that is at the destination */
+    if (NULL != ds2.node) {
+        /* Check that we are renaming like-for-like */
+        if (!S_ISDIR(ds1.node->mode) && S_ISDIR(ds2.node->mode))
+            return -EISDIR;
+        if (S_ISDIR(ds1.node->mode) && !S_ISDIR(ds2.node->mode))
+            return -ENOTDIR;
+
+        /* Now delete the destination directory entry */
+        ret = delete_dirent(ds2.dir, ds2.name, ds2.namelen);
+        if (ENOERR != ret)
+            return ret;
+    }
+
+    /* Now make a new direntry at the destination
+       and delete the old entry at the source.
+     */
+    ret = add_dirent(ds2.dir, ds2.name, ds2.namelen, ds1.node);
+    if (ENOERR == ret)
+        ret = delete_dirent(ds1.dir, ds1.name, ds1.namelen);
+
+    /* update times */
+    if (ENOERR == ret) {
+        ds1.dir->ctime = ds1.dir->mtime = 0;
+        ds2.dir->ctime = ds2.dir->mtime = 0;
+    }
+
+    return ret;
+}
+
+/* make a new dir entry for a file */
+STATIC INT ramfs_link(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo1,
+                      VFS_PATH_INFO *pathinfo2)
+{
+    RAMFS_DIRSEARCH ds1, ds2;
+    INT ret;
+
+    init_dirsearch(&ds1, pathinfo1->dir, pathinfo1->name);
+
+    ret = ramfs_find(&ds1);
+
+    if (ENOERR != ret)
+        return ret;
+
+    init_dirsearch(&ds2, pathinfo2->dir, pathinfo2->name);
+
+    ret = ramfs_find(&ds2);
+
+    if (ENOERR == ret) {
+        /* don't allow links to existing objects */
+        return -EEXIST;
+    }
+
+    /* allow through links to non-existing terminal objects */
+    if ((TRUE == ds2.last) && (-ENOENT == ret))
+        ds2.node = NULL, ret = ENOERR;
+
+    if (ENOERR != ret)
+        return ret;
+
+    /* now we know that there is no existing node at the destination,
+       make a new dirent at the destination.
+     */
+
+    ret = add_dirent(ds2.dir, ds2.name, ds2.namelen, ds1.node);
+    if (ENOERR == ret)
+        ds1.node->ctime = ds2.dir->ctime = ds2.dir->mtime = 0;
+
+    return ret;
+}
+
+/* Remove a file link from its directory. */
+STATIC INT ramfs_unlink(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo)
+{
+    RAMFS_DIRSEARCH ds;
+    INT ret;
+
+    init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
+
+    ret = ramfs_find(&ds);
+
+    if (ENOERR != ret)
+        return ret;
+
+    /* cannot unlink directories, use rmdir() instead */
+    if (S_ISDIR(ds.node->mode))
+        return -EPERM;
+
+    /* delete it from its directory */
+    ret = delete_dirent(ds.dir, ds.name, ds.namelen);
+
+    return ret;
 }
 
 VFS_FILE_SYSTEM_OPERATIONS ramfs_operations = {
-    .mount = ramfs_mount,
-    .open  = ramfs_open,
-    .mkdir = ramfs_mkdir,
+    .mount   = ramfs_mount,
+    .umount  = NULL,
+    .open    = ramfs_open,
+    .mkdir   = ramfs_mkdir,
+    .rmdir   = ramfs_rmdir,
+    .chdir   = ramfs_chdir,
+    .rename  = ramfs_rename,
+    .link    = ramfs_link,
+    .unlink  = ramfs_unlink,
+    .symlink = NULL,
 };
 
 FS_TBL_ENTRY(rootfs_entry, "rootfs", 0, &ramfs_operations);
-FS_TBL_ENTRY(ramfs_entry, "ramfs", 0, &ramfs_operations);
+FS_TBL_ENTRY(ramfs_entry,  "ramfs",  0, &ramfs_operations);
 
-VOID init_ramfs(VOID)
+STATIC VOID mod_init_ramfs(VOID)
 {
     MEM_POOL_INIT(ramfs_block_pool, ramfs_block_pool_map,
                   ramfs_block_pool_mem, WQ_TYPE_FIFO);
@@ -610,29 +844,27 @@ VOID init_ramfs(VOID)
                   ramfs_node_pool_mem, WQ_TYPE_FIFO);
 }
 
+MOD_INIT_CALL(mod_init_ramfs, MOD_RAMFS_LVL);
+
 VOID init_rootfs(VOID)
 {
-    INT res;
+    INT ret;
 
-    init_ramfs();
+    ret = mount("/", "rootfs", "rootfs");
+    BUG_ON(ENOERR != ret);
 
-    res = mount("/", "rootfs", "rootfs");
-    BUG_ON(ENOERR != res);
+    ret = chdir("/");
+    BUG_ON(ENOERR != ret);
+    BUG_ON(NULL == curr_mnt || NULL == curr_dir);
 
-    curr_mnt = find_mnt("/");
-    BUG_ON(NULL == curr_mnt);
+    //ret = mkdir("/home", 0);
+    BUG_ON(ENOERR != ret);
 
-    curr_dir = curr_mnt->mnt_root;
-    BUG_ON(NULL == curr_dir);
+    //ret = mkdir("/proc", 0);
+    BUG_ON(ENOERR != ret);
 
-    res = mkdir("/home", 0);
-    BUG_ON(ENOERR != res);
-
-    res = mkdir("/proc", 0);
-    BUG_ON(ENOERR != res);
-
-    res = mkdir("/dev", 0);
-    BUG_ON(ENOERR != res);
+    //ret = mkdir("/dev", 0);
+    BUG_ON(ENOERR != ret);
 }
 
 /******************************************************************************/

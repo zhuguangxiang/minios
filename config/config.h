@@ -68,6 +68,8 @@
 #define MOD_SCHED_LVL    0
 #define MOD_HSR_LVL      1
 #define MOD_TIMER_LVL    2
+#define MOD_FDTBL_LVL    10
+#define MOD_RAMFS_LVL    11
 
 /******************************************************************************/
 /* memory pool wild pointer check                                             */

@@ -44,7 +44,7 @@ VOID mem_pool_free(MEM_POOL *pool, VOID *block);
 
 #define MEM_POOL_INIT(pool_name, pool_map, pool_mem, wait_type) \
     mem_pool_init(&pool_name, pool_mem, sizeof(pool_mem), pool_map, \
-        sizeof(pool_map)/sizeof(UINT32), wait_type)
+        sizeof(pool_mem)/(sizeof(pool_map)/sizeof(UINT32)), wait_type)
 
 #endif /* _MEM_POOL_H_ */
 

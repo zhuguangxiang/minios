@@ -20,11 +20,13 @@ STATIC POOL_MEM(file_pool_mem, FILE_MAX_NR, sizeof(VFS_FILE));
 
 VFS_FD_TBL fd_table;
 
-VOID init_fd_table(VOID)
+STATIC VOID mod_init_fd_table(VOID)
 {
     MEM_POOL_INIT(file_pool, file_pool_map, file_pool_mem, WQ_TYPE_FIFO);
     init_mutex(&fd_table.file_lock, MUTEX_PROTOCOL_INHERIT, WQ_TYPE_FIFO);
 }
+
+MOD_INIT_CALL(mod_init_fd_table, MOD_FDTBL_LVL);
 
 VFS_FILE *get_empty_filp(VOID)
 {

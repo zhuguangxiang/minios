@@ -46,6 +46,9 @@ void test_mem_pool(void)
 	mem_pool_free(&p2, b4);
 	mem_pool_free(&p2, b1);
 	mem_pool_free(&p2, b3);
+
+	// warning: variable 'b5' set but not used
+	b5 = b5;
 }
 
 /*--------------------------------------------------------------------------*/

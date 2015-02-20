@@ -21,7 +21,7 @@ INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name)
 {
     VFS_MOUNT *m;
     VFS_FILE_SYSTEM *fs;
-    INT res;
+    INT ret;
     INT i;
 
     /* Search the mount table for an empty entry */
@@ -48,19 +48,19 @@ INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name)
     m->mnt_devname = dev_name;
     m->mnt_name = dir;
 
-    res = fs->fs_ops->mount(m, fs);
-    if (ENOERR == res)
+    ret = fs->fs_ops->mount(m, fs);
+    if (ENOERR == ret)
         m->mnt_fs = fs;
     else
         m->mnt_name = NULL;
 
-    return res;
+    return ret;
 }
 
 INT umount(CONST CHAR *name)
 {
     INT i;
-    INT res;
+    INT ret;
     VFS_MOUNT *m;
 
     for (i = 0; i < MNT_MAX_NR; i++) {
@@ -78,11 +78,11 @@ INT umount(CONST CHAR *name)
     if (i == MNT_MAX_NR)
         return -EINVAL;
 
-    res = m->mnt_fs->fs_ops->umount(m);
-    if (ENOERR == res)
+    ret = m->mnt_fs->fs_ops->umount(m);
+    if (ENOERR == ret)
         m->mnt_name = NULL;
 
-    return res;
+    return ret;
 }
 
 VFS_MOUNT *find_mnt(CONST CHAR *name)
