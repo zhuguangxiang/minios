@@ -40,5 +40,13 @@ Embedded Operating System Just Funny
 	+ msg_queue uses fifo instead of message pointer
 	+ mem_pool implementation
 
+*v0.07*
+
+	+ minios virtual filesystem from linux kernel and ecos
+	+ ramfs impl from ecos and linux kernel
+	+ memory pool changed from stack impl to queue impl
+	+ memory pool supports twice free check and wild pointer check
+
+
 
 
