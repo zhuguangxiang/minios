@@ -141,7 +141,7 @@ void app_start(void)
     task_para.priority = 9;
     task_para.stack_base = (ADDRESS)&test_task_2 + sizeof(TASK);
 
-    //task_create((TASK *)&test_task_2, &task_para, 1);
+    task_create((TASK *)&test_task_2, &task_para, 1);
 
     task_para.name = "test_task_3";
     task_para.entry = test_task_3_entry;
@@ -150,12 +150,12 @@ void app_start(void)
 
     task_create((TASK *)&test_task_3, &task_para, 1);
 
-	test_fs();
     //usbd_gpio_c_5_set();
-    //app_test_mutex();
-    //app_test_sem();
-    //app_test_mq();
-	//test_mem_pool();
+    app_test_mutex();
+    app_test_sem();
+    app_test_mq();
+	test_mem_pool();
+	test_fs();
 }
 
 /*--------------------------------------------------------------------------*/

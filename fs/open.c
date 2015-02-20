@@ -65,6 +65,12 @@ INT open(CONST CHAR *path, INT oflag, ...)
     return fd;
 }
 
+/* create a file */
+INT creat(CONST CHAR *path, UINT32 mode)
+{
+    return open(path, O_WRONLY | O_CREAT | O_TRUNC, mode);
+}
+
 STATIC INT do_filp_close(VFS_FILE *filp)
 {
     INT res = ENOERR;
@@ -84,11 +90,20 @@ INT close(INT fd)
     INT res;
     VFS_FILE *filp;
 
-    filp = fget(fd);
-    if (NULL == filp)
-        return -EBADF;
+    mutex_lock(&fd_table.file_lock);
 
-    put_unused_fd(fd);
+    BUG_ON((fd < 0) || (fd >= FD_MAX_NR));
+
+    filp = fd_table.file_descs[fd];
+
+    if (!FILE_PTR_VALID(filp)) {
+        mutex_unlock(&fd_table.file_lock);
+        return -EBADF;
+    }
+
+    __put_unused_fd(fd);
+
+    mutex_unlock(&fd_table.file_lock);
 
     res = do_filp_close(filp);
 

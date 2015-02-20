@@ -17,11 +17,18 @@
 struct error_s {
     int errnum;
     char *errstr;
-} errors = {
-    {ENOERR, "No error"},
-    {EPERM, "Not permitted"},
-    {ENOENT, "No such entity"},
-    {ESRCH, "No such process"},
+} errors[] = {
+    {ENOERR,     "No error"},
+    {-EPERM,     "Not permitted"},
+    {-ENOENT,    "No such entity"},
+    {-ESRCH,     "No such process"},
+    {-EBADF,     "Bad file handle"},
+    {-ENOMEM,    "Out of memory"},
+    {-EEXIST,    "File exists"},
+    {-ENOTDIR,   "Not a directory"},
+    {-EISDIR,    "Is a directory"},
+    {-EINVAL,    "Invalid argument"},
+    {-ENOSPC,    "No space left on device"},
 };
 
 char *strerror(int errnum)

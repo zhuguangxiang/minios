@@ -15,13 +15,14 @@
 #include "mm/mem_pool.h"
 
 STATIC MEM_POOL file_pool;
-STATIC UINT8 mm_files[sizeof(VFS_FILE) * FILE_MAX_NR];
-STATIC VFS_FD_TBL fd_table;
+STATIC POOL_MAP(file_pool_map, FILE_MAX_NR);
+STATIC POOL_MEM(file_pool_mem, FILE_MAX_NR, sizeof(VFS_FILE));
+
+VFS_FD_TBL fd_table;
 
 VOID init_fd_table(VOID)
 {
-    mem_pool_init(&file_pool, mm_files, sizeof(mm_files),
-                  sizeof(VFS_FILE), WQ_TYPE_FIFO);
+    MEM_POOL_INIT(file_pool, file_pool_map, file_pool_mem, WQ_TYPE_FIFO);
     init_mutex(&fd_table.file_lock, MUTEX_PROTOCOL_INHERIT, WQ_TYPE_FIFO);
 }
 

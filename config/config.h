@@ -69,6 +69,12 @@
 #define MOD_HSR_LVL      1
 #define MOD_TIMER_LVL    2
 
+/******************************************************************************/
+/* memory pool wild pointer check                                             */
+/******************************************************************************/
+#define MEM_POOL_WILD_POINTER_CHECK    1
+#define MEM_POOL_TWICE_FREE_CHECK      1
+
 #endif /* _MINIOS_CONFIG_H_ */
 
 /******************************************************************************/

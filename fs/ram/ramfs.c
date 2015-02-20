@@ -17,9 +17,9 @@
 
 #define RAMFS_BLOCK_SIZE      (4*1024)
 #define RAMFS_BLOCKS_MAX_NR   8
-#define RAMFS_NAME_MAX_LEN    48
+#define RAMFS_NAME_MAX_LEN    64
 
-#define RAMFS_NODE_TOTAL_NUM  50
+#define RAMFS_NODE_TOTAL_NUM  64
 #define RAMFS_BLOCK_TOTAL_NUM (RAMFS_NODE_TOTAL_NUM * RAMFS_BLOCKS_MAX_NR)
 
 typedef struct {
@@ -59,9 +59,19 @@ typedef struct {
 } RAMFS_DIRSEARCH;
 
 STATIC MEM_POOL ramfs_block_pool;
-STATIC UINT8 ramfs_mm_blocks[sizeof(RAMFS_BLOCK) * RAMFS_BLOCK_TOTAL_NUM];
+STATIC POOL_MAP(ramfs_block_pool_map, RAMFS_BLOCK_TOTAL_NUM);
+STATIC POOL_MEM(ramfs_block_pool_mem, RAMFS_BLOCK_TOTAL_NUM,
+                sizeof(RAMFS_BLOCK));
+
 STATIC MEM_POOL ramfs_node_pool;
-STATIC UINT8 ramfs_mm_nodes[sizeof(RAMFS_NODE) * RAMFS_NODE_TOTAL_NUM];
+STATIC POOL_MAP(ramfs_node_pool_map, RAMFS_NODE_TOTAL_NUM);
+STATIC POOL_MEM(ramfs_node_pool_mem, RAMFS_NODE_TOTAL_NUM, sizeof(RAMFS_NODE));
+
+STATIC INT add_dirent(RAMFS_NODE *dir, CONST CHAR *name, UINT32 namelen,
+                      RAMFS_NODE *node);
+STATIC INT delete_dirent(RAMFS_NODE *dir, CONST CHAR *name, UINT32 namelen);
+STATIC INLINE VOID free_node(RAMFS_NODE *n);
+STATIC INT free_buffer(RAMFS_NODE *node);
 
 STATIC INLINE RAMFS_BLOCK *alloc_block(VOID)
 {
@@ -85,6 +95,18 @@ STATIC INLINE RAMFS_NODE *alloc_node(UINT32 mode)
     memset(node, 0, sizeof(RAMFS_NODE));
     node->mode = mode;
     node->atime = node->mtime = node->ctime = 0;
+
+    if (S_ISDIR(mode)) {
+        INT res = add_dirent(node, ".", 1, node);
+        if (ENOERR == res)
+            res = add_dirent(node, "..", 2, node);
+
+        if (ENOERR != res) {
+            free_buffer(node);
+            free_node(node);
+            return NULL;
+        }
+    }
 
     return node;
 }
@@ -141,8 +163,6 @@ STATIC INT free_buffer(RAMFS_NODE *node)
 
     return ENOERR;
 }
-
-STATIC INT delete_dirent(RAMFS_NODE *dir, CONST CHAR *name, UINT32 namelen);
 
 /* decrease a node's reference count.
    If this makes the ref count zero, and the number of links is either one
@@ -267,6 +287,8 @@ STATIC INT delete_dirent(RAMFS_NODE *dir, CONST CHAR *name, UINT32 namelen)
     return ENOERR;
 }
 
+/******************************************************************************/
+
 /* initialize a dirsearch object to start a search */
 STATIC VOID init_dirsearch(RAMFS_DIRSEARCH *ds, RAMFS_NODE *dir,
                            CONST CHAR *name)
@@ -284,7 +306,7 @@ STATIC VOID init_dirsearch(RAMFS_DIRSEARCH *ds, RAMFS_NODE *dir,
 STATIC INT find_entry(RAMFS_DIRSEARCH *ds)
 {
     CONST CHAR *n;
-    UINT32 len;
+    UINT32 len = 0;
     RAMFS_DIRENT *d;
 
     /* check that there really is a directory */
@@ -353,21 +375,10 @@ STATIC INT ramfs_find(RAMFS_DIRSEARCH *ds)
 STATIC INT ramfs_mount(VFS_MOUNT *mnt, VFS_FILE_SYSTEM *fs)
 {
     RAMFS_NODE *root;
-    INT res;
 
     root = alloc_node(__stat_mode_DIR|S_IRWXU|S_IRWXG|S_IRWXO);
     if (NULL == root)
         return -ENOSPC;
-
-    res = add_dirent(root, ".", 1, root);
-    if (ENOERR == res)
-        res = add_dirent(root, "..", 2, root);
-
-    if (ENOERR != res) {
-        free_buffer(root);
-        free_node(root);
-        return res;
-    }
 
     mnt->mnt_root = root;
 
@@ -467,9 +478,22 @@ STATIC INT32 ramfs_write(VFS_FILE *filp, UINT8 *buf, UINT32 len)
     return write_len;
 }
 
+/* close(release) a file */
+STATIC INT ramfs_release(VFS_FILE *filp)
+{
+    RAMFS_NODE *node = filp->f_data;
+
+    dec_refcnt(node);
+
+    filp->f_data = NULL;
+
+    return ENOERR;
+}
+
 STATIC VFS_FILE_OPERATIONS ramfs_fileops = {
     .read  = ramfs_read,
     .write = ramfs_write,
+    .release = ramfs_release,
 };
 
 STATIC INT ramfs_open(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, UINT32 mode,
@@ -483,7 +507,7 @@ STATIC INT ramfs_open(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, UINT32 mode,
 
     res = ramfs_find(&ds);
 
-    if (ENOENT == res) {
+    if (-ENOENT == res) {
         if ((TRUE == ds.last) && (O_CREAT & mode)) {
             node = alloc_node(__stat_mode_REG|S_IRWXU|S_IRWXG|S_IRWXO);
             if (NULL == node)
@@ -525,7 +549,7 @@ STATIC INT ramfs_open(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, UINT32 mode,
     node->refcnt++;
 
     /* initialize the file object */
-    filp->f_flags |= mode;
+    filp->f_flags |= (mode & FILE_MODE_MASK);
     filp->f_ops    = &ramfs_fileops;
     filp->f_offset = (O_APPEND & mode) ? node->size : 0;
     filp->f_data   = node;
@@ -533,9 +557,46 @@ STATIC INT ramfs_open(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo, UINT32 mode,
     return ENOERR;
 }
 
+STATIC INT ramfs_mkdir(VFS_MOUNT *mnt, VFS_PATH_INFO *pathinfo)
+{
+    RAMFS_DIRSEARCH ds;
+    RAMFS_NODE *node;
+    INT res;
+
+    init_dirsearch(&ds, pathinfo->dir, pathinfo->name);
+
+    res = ramfs_find(&ds);
+
+    if (-ENOENT == res) {
+        if (TRUE == ds.last) {
+            /* create new node */
+            node = alloc_node(__stat_mode_DIR|S_IRWXU|S_IRWXG|S_IRWXO);
+            if (NULL == node)
+                return -ENOSPC;
+
+            /* add node's dir entry to its parent node */
+            res = add_dirent(ds.dir, ds.name, ds.namelen, node);
+            if (ENOERR != res) {
+                free_buffer(node);
+                free_node(node);
+                return res;
+            }
+        }
+        /* if this was not the last element, then and intermediate
+           directory does not exist.
+        */
+    } else if (ENOERR == res) {
+        /* if there is no error, something already exists with that name */
+        res = -EEXIST;
+    }
+
+    return res;
+}
+
 VFS_FILE_SYSTEM_OPERATIONS ramfs_operations = {
     .mount = ramfs_mount,
     .open  = ramfs_open,
+    .mkdir = ramfs_mkdir,
 };
 
 FS_TBL_ENTRY(rootfs_entry, "rootfs", 0, &ramfs_operations);
@@ -543,19 +604,35 @@ FS_TBL_ENTRY(ramfs_entry, "ramfs", 0, &ramfs_operations);
 
 VOID init_ramfs(VOID)
 {
-    mem_pool_init(&ramfs_block_pool, ramfs_mm_blocks, sizeof(ramfs_mm_blocks),
-                  sizeof(RAMFS_BLOCK), WQ_TYPE_FIFO);
-    mem_pool_init(&ramfs_node_pool, ramfs_mm_nodes, sizeof(ramfs_mm_nodes),
-                  sizeof(RAMFS_NODE), WQ_TYPE_FIFO);
+    MEM_POOL_INIT(ramfs_block_pool, ramfs_block_pool_map,
+                  ramfs_block_pool_mem, WQ_TYPE_FIFO);
+    MEM_POOL_INIT(ramfs_node_pool, ramfs_node_pool_map,
+                  ramfs_node_pool_mem, WQ_TYPE_FIFO);
 }
 
 VOID init_rootfs(VOID)
 {
+    INT res;
+
     init_ramfs();
-    mount("/", "rootfs", "rootfs");
+
+    res = mount("/", "rootfs", "rootfs");
+    BUG_ON(ENOERR != res);
+
     curr_mnt = find_mnt("/");
     BUG_ON(NULL == curr_mnt);
+
     curr_dir = curr_mnt->mnt_root;
+    BUG_ON(NULL == curr_dir);
+
+    res = mkdir("/home", 0);
+    BUG_ON(ENOERR != res);
+
+    res = mkdir("/proc", 0);
+    BUG_ON(ENOERR != res);
+
+    res = mkdir("/dev", 0);
+    BUG_ON(ENOERR != res);
 }
 
 /******************************************************************************/

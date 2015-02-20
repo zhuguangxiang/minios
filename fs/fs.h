@@ -71,9 +71,9 @@ struct vfs_file_operations {
     INT32 (*read)(VFS_FILE *, UINT8 *, UINT32);
     INT32 (*write)(VFS_FILE *, UINT8 *, UINT32);
     INT   (*lseek)(VFS_FILE *, INT32, INT);
+    INT   (*flush)(VFS_FILE *);
     INT   (*release)(VFS_FILE *);
     INT   (*ioctl)(VFS_FILE *, UINT32, VOID *);
-    INT   (*flush)(VFS_FILE *);
 };
 
 struct vfs_file {
@@ -112,6 +112,14 @@ typedef struct {
 #define O_RSYNC     (1<<10)   /* Synchronized read I/O */
 #define O_SYNC      (1<<11)   /* Synchronized I/O file integrity writes */
 
+#define FREAD       O_RDONLY
+#define FWRITE      O_WRONLY
+#define FNONBLOCK   O_NONBLOCK
+#define FAPPEND     O_APPEND
+
+// Mask for open mode bits stored in file object
+#define FILE_MODE_MASK (FREAD|FWRITE|FNONBLOCK|FAPPEND)
+
 #define SEEK_SET    0   /* seek relative to beginning of file */
 #define SEEK_CUR    1   /* seek relative to current file position */
 #define SEEK_END    2   /* seek relative to end of file */
@@ -122,7 +130,6 @@ INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name);
 INT umount(CONST CHAR *name);
 
 VFS_FILE *get_empty_filp(VOID);
-
 VFS_FILE *__fget(INT fd);
 VFS_FILE *fget(INT fd);
 VOID __fput(VFS_FILE *filp);
@@ -142,7 +149,10 @@ INT close(INT fd);
 INT read(INT fd, VOID *buf, UINT32 len);
 INT write(INT fd, VOID *buf, UINT32 len);
 INT lseek(INT fd, INT32 offset, INT whence);
+INT mkdir(CONST CHAR *path, UINT32 mode);
 
+extern VFS_FD_TBL fd_table;
+extern VFS_MOUNT mnt_table[MNT_MAX_NR];
 extern VFS_MOUNT *curr_mnt;
 extern VFS_DIR curr_dir;
 

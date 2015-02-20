@@ -32,14 +32,19 @@ typedef struct {
 } MEM_POOL;
 
 #define BLOCK_END           0xFF000000
-#define BLOCK_BYTE_MAGIC    0xc5
+#define BLOCK_BYTE_MAGIC    0x55
 
 #define POOL_MAP(name, blk_num) UINT32 name[blk_num]
+#define POOL_MEM(name, blk_num, blk_size) UINT8 name[blk_size * blk_num]
 
 VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size, UINT32 *blk_map,
                    UINT32 blk_size, INT wait);
 VOID *mem_pool_alloc(MEM_POOL *pool);
 VOID mem_pool_free(MEM_POOL *pool, VOID *block);
+
+#define MEM_POOL_INIT(pool_name, pool_map, pool_mem, wait_type) \
+    mem_pool_init(&pool_name, pool_mem, sizeof(pool_mem), pool_map, \
+        sizeof(pool_map)/sizeof(UINT32), wait_type)
 
 #endif /* _MEM_POOL_H_ */
 

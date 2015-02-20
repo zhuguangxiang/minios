@@ -13,14 +13,17 @@ union {
 } test_mutex_task_1, test_mutex_task_2, test_mutex_task_3;
 
 MUTEX test_mutex = MUTEX_INIT(test_mutex, MUTEX_PROTOCOL_INHERIT, WQ_TYPE_FIFO);
+MUTEX test_mutex2 = MUTEX_INIT(test_mutex2, MUTEX_PROTOCOL_INHERIT, WQ_TYPE_FIFO);
 
 void test_mutex_task_1_entry(void *p)
 {
 	int count = 0;
     while (1) {
         mutex_lock(&test_mutex);
+		mutex_lock(&test_mutex2);
         printf("%s\r\n", current->name);
 		mutex_unlock(&test_mutex);
+		mutex_unlock(&test_mutex2);
 		count++;
 		if (count > 10000)
 			task_exit();
@@ -32,8 +35,10 @@ void test_mutex_task_2_entry(void *p)
     while (1) {
 		task_sleep(10);
         mutex_lock(&test_mutex);
+		mutex_lock(&test_mutex2);
         printf("%s\r\n", current->name);
 		mutex_unlock(&test_mutex);
+		mutex_unlock(&test_mutex2);
     }
 }
 
@@ -42,8 +47,10 @@ void test_mutex_task_3_entry(void *p)
     while (1) {
 		task_sleep(5);
         mutex_lock(&test_mutex);
+		mutex_lock(&test_mutex2);
         printf("%s\r\n", current->name);
 		mutex_unlock(&test_mutex);
+		mutex_unlock(&test_mutex2);
     }
 }
 

@@ -64,6 +64,7 @@ fi
 
 # rm obj/*.o
 
+compile "common/error.c"
 compile "common/crc16.c"
 compile "common/ctype.c"
 compile "common/itoa.c"
@@ -96,6 +97,7 @@ compile "fs/fd.c"
 compile "fs/mount.c"
 compile "fs/open.c"
 compile "fs/read_write.c"
+compile "fs/namei.c"
 ar "obj/fs/*.o" "libvfs.a"
 
 compile "fs/ram/ramfs.c"
