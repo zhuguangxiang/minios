@@ -24,10 +24,14 @@ typedef struct {
     UINT32 *blk_map;    /* block map address */
     UINT32 blk_size;    /* block size */
     UINT32 blk_num;     /* block total number */
+
     UINT32 blk_inuse;   /* used block number */
     UINT32 blk_free;    /* free block index */
+    UINT32 blk_lfree;   /* last free block index */
     MUTEX  lock;        /* pool lock */
 } MEM_POOL;
+
+#define BLOCK_END    0xFF000000
 
 #define POOL_MAP(name, blk_num) UINT32 name[blk_num]
 
