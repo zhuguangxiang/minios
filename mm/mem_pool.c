@@ -15,31 +15,38 @@
 #include "common/bug.h"
 #include "kernel/task.h"
 
-STATIC INLINE VOID init_mem_pool_map(MEM_POOL *pool)
+#if (MEM_POOL_TWICE_FREE_CHECK > 0)
+
+STATIC VOID mem_pool_twice_free_check(MEM_POOL *pool, UINT32 blk_idx)
 {
-    UINT32 i;
-    UINT32 *map;
+    UINT32 free_idx = pool->blk_free;
 
-    for (i = 0; i < pool->blk_num; i++) {
-        map = (UINT32 *)(pool->start + pool->blk_size * i);
-        *map = i + 1;
+    BUG_ON(blk_idx >= pool->blk_num);
+
+    while (free_idx != pool->blk_num) {
+        BUG_ON(free_idx == blk_idx);
+        free_idx = pool->blk_map[free_idx];
     }
-
-    /* last block */
-    map = (UINT32 *)(pool->start + pool->blk_size * (i - 1));
-    *map = POOL_BLOCK_END;
 }
 
-VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size,
+#endif
+
+STATIC INLINE VOID init_mem_pool_map(MEM_POOL *pool)
+{
+    for (INT i = 0; i < pool->blk_num; i++)
+        pool->blk_map[i] = i + 1;
+}
+
+VOID mem_pool_init(MEM_POOL *pool, VOID *start, UINT32 size, UINT32 *blk_map,
                    UINT32 blk_size, INT wait)
 {
     BUG_ON(size < 4);
     BUG_ON(size < blk_size);
     BUG_ON(size % blk_size);
-    BUG_ON(size / blk_size > (~POOL_BLOCK_END + 1));
 
     pool->start     = start;
     pool->size      = size;
+    pool->blk_map   = blk_map;
     pool->blk_size  = blk_size;
     pool->blk_num   = size/blk_size;
     pool->blk_inuse = 0;
@@ -56,10 +63,10 @@ VOID *mem_pool_alloc(MEM_POOL *pool)
 
     mutex_lock(&pool->lock);
 
-    if (pool->blk_free != POOL_BLOCK_END) {
+    if (pool->blk_free != pool->blk_num) {
         /* memory available */
         block = pool->start + pool->blk_free * pool->blk_size;
-        pool->blk_free = *(UINT32 *)block;
+        pool->blk_free = pool->blk_map[pool->blk_free];
         ++pool->blk_inuse;
     }
 
@@ -71,7 +78,6 @@ VOID *mem_pool_alloc(MEM_POOL *pool)
 VOID mem_pool_free(MEM_POOL *pool, VOID *b)
 {
     UINT32 idx;
-    UINT32 *map;
 
     BUG_ON((UINT8 *)b < pool->start);
     BUG_ON((UINT8 *)b > (pool->start + pool->size));
@@ -80,8 +86,12 @@ VOID mem_pool_free(MEM_POOL *pool, VOID *b)
     mutex_lock(&pool->lock);
 
     idx = ((UINT8 *)b - pool->start) / pool->blk_size;
-    map = (UINT32 *)(pool->start + pool->blk_size * idx);
-    *map = pool->blk_free;
+
+#if (MEM_POOL_TWICE_FREE_CHECK > 0)
+    mem_pool_twice_free_check(pool, idx);
+#endif
+
+    pool->blk_map[idx] = pool->blk_free;
     pool->blk_free = idx;
     --pool->blk_inuse;
 
