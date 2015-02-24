@@ -48,5 +48,9 @@ Embedded Operating System Just Funny
 	+ memory pool supports twice free check and wild pointer check
 	+ update to v0.07
 
+*v0.08*
 
+	+ devfs
+	+ tty driver
+	+ serial driver
 
