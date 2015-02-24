@@ -10,7 +10,7 @@ C_OPT="-fno-omit-frame-pointer -O0"
 C_DBG="-g"
 C_WARN="-Wall -Wformat -Wstrict-prototypes -Wstrict-aliasing"
 C_ARCH="-mapcs-frame -std=gnu99 -mbig-endian -march=armv4"
-C_DEF="-DCPU_BITS=32"
+C_DEF="-DCPU_BYTES=4"
 C_FLAGS="-c -nostdinc -fno-builtin $C_OPT $C_DBG $C_WARN $C_ARCH $C_DEF"
 
 LD_SCRIPT="hal/arm7_9/arm7_9.lds"
@@ -23,7 +23,7 @@ function compile()
 	obj="${1%.*}.o"
 	obj="${obj##*/}"
 	path="${1%/*}"
-	# echo "$path"
+	#echo "$path"
 	if [ ! -d obj/$path ]; then
 		mkdir -p obj/$path
 	fi
@@ -76,6 +76,8 @@ compile "common/memcpy.c"
 compile "common/strlen.c"
 compile "common/strcmp.c"
 compile "common/strcpy.c"
+compile "common/strchr.c"
+compile "common/strrchr.c"
 compile "common/printf.c"
 compile "common/panic.c"
 compile "common/fifo.c"

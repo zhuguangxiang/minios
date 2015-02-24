@@ -11,13 +11,14 @@
 /*                                                                            */
 /**MOD-************************************************************************/
 
+#include "common/stdarg.h"
 #include "fs/fs.h"
 
 STATIC INT32 do_filp_read(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
     INT32 read_len;
 
-    if (!(filp->f_flags & O_RDONLY))
+    if (!(filp->f_flags & FREAD))
         return -EBADF;
 
     if (!filp->f_ops || !filp->f_ops->read)
@@ -47,7 +48,7 @@ STATIC INT32 do_filp_write(VFS_FILE *filp, VOID *buf, UINT32 len)
 {
     INT32 write_len;
 
-    if (!(filp->f_flags & O_WRONLY))
+    if (!(filp->f_flags & FWRITE))
         return -EBADF;
 
     if (!filp->f_ops || !filp->f_ops->write)
@@ -94,6 +95,51 @@ INT32 lseek(INT fd, INT32 offset, INT whence)
         return ret;
     else
         return offset;
+}
+
+INT fstat(INT fd, VFS_STAT_INFO *stat)
+{
+    INT ret;
+    VFS_FILE *filp;
+
+    if (NULL == stat)
+        return -EINVAL;
+
+    filp = fget(fd);
+    if (NULL == filp)
+        return -EBADF;
+
+    ret = -ENOTSUP;
+
+    if (filp->f_ops && filp->f_ops->fstat)
+        ret = filp->f_ops->fstat(filp, stat);
+
+    fput(filp);
+    return ret;
+}
+
+INT ioctl(INT fd, INT cmd, ...)
+{
+    INT ret;
+    VFS_FILE *filp;
+
+    filp = fget(fd);
+    if (NULL == filp)
+        return -EBADF;
+
+    ret = -ENOTSUP;
+
+    if (filp->f_ops && filp->f_ops->ioctl) {
+        va_list args;
+        VOID *data;
+        va_start(args, cmd);
+        data = va_arg(args, VOID *);
+        va_end(args);
+        ret = filp->f_ops->ioctl(filp, cmd, data);
+    }
+
+    fput(filp);
+    return ret;
 }
 
 /******************************************************************************/

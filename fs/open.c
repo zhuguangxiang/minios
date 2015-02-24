@@ -17,35 +17,58 @@ STATIC VFS_FILE *do_filp_open(CONST CHAR *path, INT oflag, INT *error)
 {
     VFS_MOUNT *mnt;
     VFS_DIR dir;
-    VFS_FILE *filp;
+    VFS_FILE *filp = NULL;
+    VFS_FILE_SYSTEM *fs;
+    VFS_PATH_INFO pathinfo;
     INT ret;
-    VFS_PATH_INFO path_info;
 
     ret = vfs_path_lookup(&path, &mnt, &dir);
     if (ENOERR != ret) {
         *error = ret;
-        return NULL;
+        goto error;
     }
+
+    fs = mnt->mnt_fs;
+    BUG_ON(NULL == fs);
 
     filp = get_empty_filp();
     if (NULL == filp) {
         *error = -EMFILE;
-        return NULL;
+        goto error;
     }
 
-    path_info.name = path;
-    path_info.dir = dir;
+    if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->lookup)) {
+        *error = -ENOTSUP;
+        goto error;
+    }
 
-    ret = mnt->mnt_fs->fs_ops->open(mnt, &path_info, oflag, filp);
+    pathinfo.name = path;
+    pathinfo.dir = dir;
+
+    ret = fs->fs_ops->lookup(mnt, &pathinfo, oflag, filp);
     if (ENOERR != ret) {
-        __fput(filp);
         *error = ret;
-        return NULL;
+        goto error;
+    }
+
+    if ((NULL != filp->f_ops) && (NULL != filp->f_ops->open))
+        ret = filp->f_ops->open(filp);
+
+    if (ENOERR != ret) {
+        *error = ret;
+        goto error;
     }
 
     filp->f_mnt = mnt;
 
     return filp;
+
+error:
+
+    if (NULL != filp)
+        __fput(filp);
+
+    return NULL;
 }
 
 INT open(CONST CHAR *path, INT oflag, ...)

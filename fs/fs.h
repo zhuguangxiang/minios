@@ -29,6 +29,7 @@ typedef struct vfs_mount VFS_MOUNT;
 typedef VOID *VFS_DIR;
 typedef struct vfs_file_operations VFS_FILE_OPERATIONS;
 typedef struct vfs_file VFS_FILE;
+typedef struct vfs_stat VFS_STAT_INFO;
 
 typedef struct {
     VFS_DIR dir;
@@ -38,7 +39,7 @@ typedef struct {
 typedef struct {
     INT (*mount)(VFS_MOUNT *, VFS_FILE_SYSTEM *);
     INT (*umount)(VFS_MOUNT *);
-    INT (*open)(VFS_MOUNT *, VFS_PATH_INFO *, UINT32 mode, VFS_FILE *);
+    INT (*lookup)(VFS_MOUNT *, VFS_PATH_INFO *, UINT32 mode, VFS_FILE *);
     INT (*mkdir)(VFS_MOUNT *, VFS_PATH_INFO *);
     INT (*rmdir)(VFS_MOUNT *, VFS_PATH_INFO *);
     INT (*chdir)(VFS_MOUNT *, VFS_PATH_INFO *, VFS_DIR *);
@@ -46,6 +47,7 @@ typedef struct {
     INT (*link)(VFS_MOUNT *, VFS_PATH_INFO *, VFS_PATH_INFO *);
     INT (*unlink)(VFS_MOUNT *, VFS_PATH_INFO *);
     INT (*symlink)(VFS_MOUNT *, VFS_PATH_INFO *, CONST CHAR *);
+    INT (*stat)(VFS_MOUNT *, VFS_PATH_INFO *, VFS_STAT_INFO *);
 } VFS_FILE_SYSTEM_OPERATIONS;
 
 struct vfs_file_system {
@@ -68,12 +70,14 @@ struct vfs_mount {
 };
 
 struct vfs_file_operations {
+    INT   (*open)(VFS_FILE *);
     INT32 (*read)(VFS_FILE *, UINT8 *, UINT32);
     INT32 (*write)(VFS_FILE *, UINT8 *, UINT32);
     INT   (*lseek)(VFS_FILE *, INT32 *, INT);
     INT   (*flush)(VFS_FILE *);
+    INT   (*ioctl)(VFS_FILE *, INT, VOID *);
     INT   (*release)(VFS_FILE *);
-    INT   (*ioctl)(VFS_FILE *, UINT32, VOID *);
+    INT   (*fstat)(VFS_FILE *, VFS_STAT_INFO *);
 };
 
 struct vfs_file {
@@ -125,6 +129,25 @@ typedef struct {
 #define SEEK_END    2   /* seek relative to end of file */
 #define SEEK_MAX    SEEK_END
 
+#define FILE_NAME_LEN 64
+typedef struct {
+    UINT32 mode;
+    CHAR   name[FILE_NAME_LEN];
+} VFS_DIRENT;
+
+struct vfs_stat {
+    UINT32  st_mode;     /* File mode */
+    UINT32  st_ino;      /* File serial number */
+    INT16   st_dev;      /* ID of device containing file */
+    UINT16  st_nlink;    /* Number of hard links */
+    UINT16  st_uid;      /* User ID of the file owner */
+    UINT16  st_gid;      /* Group ID of the file's group */
+    UINT32  st_size;     /* File size (regular files only) */
+    TIME    st_atime;    /* Last access time */
+    TIME    st_mtime;    /* Last data modification time */
+    TIME    st_ctime;    /* Last file status change time */
+};
+
 INT vfs_path_lookup(CONST CHAR **name, VFS_MOUNT **mnt, VFS_DIR *dir);
 INT mount(CONST CHAR *dir, CONST CHAR *fs_name, CONST CHAR *dev_name);
 INT umount(CONST CHAR *name);
@@ -148,6 +171,8 @@ INT close(INT fd);
 INT32 read(INT fd, VOID *buf, UINT32 len);
 INT32 write(INT fd, VOID *buf, UINT32 len);
 INT32 lseek(INT fd, INT32 offset, INT whence);
+INT fstat(INT fd, VFS_STAT_INFO *stat);
+INT ioctl(INT fd, INT request, ...);
 
 INT creat(CONST CHAR *path, UINT32 mode);
 INT open(CONST CHAR *path, INT oflag, ...);
@@ -157,6 +182,7 @@ INT chdir(CONST CHAR *path);
 INT rename(CONST CHAR *path1, CONST CHAR *path2);
 INT link(CONST CHAR *path1, CONST CHAR *path2);
 INT unlink(CONST CHAR *path);
+INT stat(CONST CHAR *path, VFS_STAT_INFO *stat);
 
 extern VFS_FD_TBL fd_table;
 extern VFS_MOUNT mnt_table[MNT_MAX_NR];

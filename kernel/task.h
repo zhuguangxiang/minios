@@ -195,6 +195,9 @@ UINT32 task_measure_stack_usage(TASK *task);
 VOID task_set_inherit_priority(UINT8 priority, TASK *task);
 VOID task_clear_inherit_priority(TASK *task);
 
+#define WAIT_FOREVER -1
+#define NO_WAIT      0
+
 #endif /* _MINIOS_TASK_H_ */
 
 /******************************************************************************/

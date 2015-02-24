@@ -12,6 +12,7 @@
 /**MOD-************************************************************************/
 
 #include "fs/fs.h"
+#include "fs/stat.h"
 #include "common/stdio.h"
 #include "common/error.h"
 
@@ -28,6 +29,10 @@ void test_fs_rename_file(void)
 			printf("write count: %d\r\n", ret);
 		else
 			printf("write error: %s\r\n", strerror(ret));
+	}
+	else
+	{
+		printf("creat a.txt failed\r\n");
 	}
 
 	close(fd);
@@ -46,6 +51,10 @@ void test_fs_rename_file(void)
 			printf("write count: %d\r\n", ret);
 		else
 			printf("write error: %s\r\n", strerror(ret));
+	}
+	else
+	{
+		printf("creat a.txt failed\r\n");
 	}
 
 	ret = rename("/a.txt", "/b.txt");
@@ -182,11 +191,110 @@ void test_fs1(void)
 	}
 }
 
+char *node_permission(UINT32 mode)
+{
+	char *s;
+	switch (mode & S_IFMT)
+	{
+		case S_IFDIR:
+			s = "drwxrwxrwx";
+			break;
+		case S_IFREG:
+			s = "-rwxrwxrwx";
+			break;
+		default:
+			s = "none";
+			break;
+	}
+
+	return s;
+}
+
+void test_ls(char *path)
+{
+	int fd, ret;
+	VFS_DIRENT dirinfo;
+	VFS_STAT_INFO statinfo;
+	char fullpath[128];
+
+	printf("list %s:\r\n", path);
+
+	stat(path, &statinfo);
+	if (!(statinfo.st_mode & S_IFDIR))
+	{
+		char *name = strrchr(path, '/');
+		if (!name) name = path;
+		else name++;
+
+		printf("%s  %d  %4d  %s\r\n", node_permission(statinfo.st_mode),
+				statinfo.st_nlink, 
+				(statinfo.st_mode & S_IFDIR) ? 4096 : statinfo.st_size,
+				name);
+		return;
+	}
+
+	fd = open(path, O_RDONLY);
+	ret = read(fd, &dirinfo, sizeof(dirinfo));
+	if (ret > 0) {
+		snprintf(fullpath, 511, "%s/%s", path, dirinfo.name);
+		stat(fullpath, &statinfo);
+		printf("%s  %d  %4d  %s\r\n", node_permission(statinfo.st_mode),
+				statinfo.st_nlink, 
+				(statinfo.st_mode & S_IFDIR) ? 4096 : statinfo.st_size,
+				dirinfo.name);
+    }
+	while (ret > 0) {
+		ret = read(fd, &dirinfo, sizeof(dirinfo));
+		if (ret > 0) {
+			snprintf(fullpath, 511, "%s/%s", path, dirinfo.name);
+			stat(fullpath, &statinfo);
+			printf("%s  %d  %4d  %s\r\n", node_permission(statinfo.st_mode),
+					statinfo.st_nlink, 
+					(statinfo.st_mode & S_IFDIR) ? 4096 : statinfo.st_size,
+					dirinfo.name);
+		}
+	}
+}
+
+void test_fs_dir(void)
+{
+	int ret;
+	ret = mkdir("/home", 0);
+	printf("mkdir ret:%d\r\n", ret);
+	ret = mkdir("/dev", 0);
+	printf("mkdir ret:%d\r\n", ret);
+	ret = mkdir("/sys", 0);
+	printf("mkdir ret:%d\r\n", ret);
+	ret = mkdir("/mnt", 0);
+	printf("mkdir ret:%d\r\n", ret);
+
+	int fd = creat("/a.txt", 0);
+	char *hi = "hello, minios vfs";
+	write(fd, hi, strlen(hi));
+	close(fd);
+	
+	test_ls("/.");
+
+	rmdir("/sys");
+
+	test_ls("/.");
+
+	test_ls("/a.txt");
+
+	fd = creat("/home/b.txt", 0);
+	hi = "hello, home";
+	write(fd, hi, strlen(hi));
+	close(fd);
+
+	test_ls("/home");
+}
+
 void test_fs(void)
 {
 	init_rootfs();
 
-	test_fs_rename_file();
+	test_fs_dir();
+	//test_fs_rename_file();
 	//test_fs_rename_dir();
 	//test_fs_link();
 	//test_fs_unlink();

@@ -56,13 +56,26 @@ typedef signed   int     BOOL;       /* boolean                               */
 /* Kernel Types                                                               */
 /******************************************************************************/
 typedef UINT32   CPU_FLAGS;
-typedef UINT32   HANDLE;
-typedef UINT32   ADDRESS;
 typedef INT      TICK_COUNT;
 typedef UINT32   TIME;
 
-#define WAIT_FOREVER -1
-#define NO_WAIT      0
+/******************************************************************************/
+/* Integer pointer                                                            */
+/******************************************************************************/
+#if (CPU_BYTES == 1)
+typedef UINT8    INTPTR;
+#elif (CPU_BYTES == 2)
+typedef UINT16   INTPTR;
+#elif (CPU_BYTES == 4)
+typedef UINT32   INTPTR;
+#elif (CPU_BYTES == 8)
+typedef UINT64   INTPTR;
+#else
+#error "not supported cpu bytes"
+#endif
+
+typedef INTPTR   ADDRESS;
+typedef INTPTR   HANDLE;
 
 /******************************************************************************/
 /* MIN()/MAX() Macros                                                         */

@@ -40,7 +40,7 @@ INT match_len(CONST CHAR *s1, CONST CHAR *s2)
 
 INT vfs_path_lookup(CONST CHAR **name, VFS_MOUNT **mnt, VFS_DIR *dir)
 {
-    VFS_MOUNT *best;
+    VFS_MOUNT *best = NULL;
     VFS_MOUNT *m;
     INT best_len = 0;
     INT i;
@@ -117,7 +117,7 @@ INT mkdir(CONST CHAR *path, UINT32 mode)
     fs = mnt->mnt_fs;
 
     if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->mkdir))
-        return -EPERM;
+        return -ENOTSUP;
 
     pathinfo.name = path;
     pathinfo.dir = dir;
@@ -144,7 +144,7 @@ INT rmdir(CONST CHAR *path)
     fs = mnt->mnt_fs;
 
     if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->rmdir))
-        return -EPERM;
+        return -ENOTSUP;
 
     pathinfo.name = path;
     pathinfo.dir = dir;
@@ -172,7 +172,7 @@ INT chdir(CONST CHAR *path)
     fs = mnt->mnt_fs;
 
     if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->chdir))
-        return -EPERM;
+        return -ENOTSUP;
 
     pathinfo.name = path;
     pathinfo.dir = dir;
@@ -189,7 +189,7 @@ INT chdir(CONST CHAR *path)
         BUG_ON(NULL == fs);
 
         if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->chdir))
-            return -EPERM;
+            return -ENOTSUP;
 
         pathinfo.name = NULL;
         pathinfo.dir = curr_dir;
@@ -296,12 +296,39 @@ INT unlink(CONST CHAR *path)
     fs = mnt->mnt_fs;
 
     if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->unlink))
-        return -EPERM;
+        return -ENOTSUP;
 
     pathinfo.name = path;
     pathinfo.dir = dir;
 
     ret = fs->fs_ops->unlink(mnt, &pathinfo);
+
+    return ret;
+}
+
+/* Get file statistics */
+INT stat(CONST CHAR *path, VFS_STAT_INFO *stat)
+{
+    INT ret;
+    VFS_MOUNT *mnt;
+    VFS_DIR dir;
+    VFS_FILE_SYSTEM *fs;
+    VFS_PATH_INFO pathinfo;
+
+    ret = vfs_path_lookup(&path, &mnt, &dir);
+    if (ENOERR != ret)
+        return -ENOENT;
+
+    BUG_ON(NULL == mnt->mnt_fs);
+    fs = mnt->mnt_fs;
+
+    if ((NULL == fs->fs_ops) || (NULL == fs->fs_ops->stat))
+        return -ENOTSUP;
+
+    pathinfo.name = path;
+    pathinfo.dir = dir;
+
+    ret = fs->fs_ops->stat(mnt, &pathinfo, stat);
 
     return ret;
 }

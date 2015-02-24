@@ -22,6 +22,8 @@ void *memmove(void *dst, const void *src, int count);
 char *strcpy(char *s1, const char *s2);
 int strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
+char *strchr(register const char *s, int c);
+char *strrchr(register const char *s, int c);
 
 char *itoa(int value, char *s, int base);
 unsigned int strtoul(const char *cp, char **endp, unsigned int base);

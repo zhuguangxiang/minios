@@ -33,6 +33,7 @@ struct error_s {
     {-EMFILE,          "Too many open files"},
     {-EXDEV,           "Cross-device link"},
     {-ENOTSUP,         "Not supported error"},
+    {-ENOSYS,          "Function not implemented"},
 };
 
 char *strerror(int errnum)
